@@ -77,7 +77,6 @@ C2/
 ├── c2_server.py               # Quick launcher for server
 ├── c2_client.py               # Quick launcher for client
 ├── requirements.txt           # Python dependencies
-├── .gitignore                 # Git ignore rules
 ├── c2_server.log              # Server logs (generated)
 └── README.md                  # This file
 ```
