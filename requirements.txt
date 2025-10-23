@@ -1,5 +1,0 @@
-# C2 System Dependencies
-# Python 3.7+
-
-# Required for TLS certificate generation
-cryptography>=41.0.0
