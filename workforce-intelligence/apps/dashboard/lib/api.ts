@@ -8,15 +8,34 @@ import type {
   AIQueryRequest,
   AIQueryResponse,
   AISummary,
+  AllowlistResult,
+  AuditPage,
+  AutomationOpportunity,
+  Campaign,
   ContentItem,
   ContentVersion,
   DateRange,
+  DeviceEnrollment,
+  DeviceEnrollRequest,
+  DeviceRevokeResult,
   Employee,
+  EmployeeCreateRequest,
+  IntegrationChannel,
+  IntegrationCredentialRequest,
+  IntegrationCredentialResult,
+  IntegrationStatus,
+  IntegrationSyncResult,
   LoginRequest,
   Me,
+  OrganizationCreateRequest,
+  OrganizationSummary,
+  Team,
+  TeamMember,
   TokenResponse,
   TimelineEntry,
   UsageRow,
+  UserCreateRequest,
+  UserSummary,
   WorkflowRow,
   WorkSession,
 } from "./types";
@@ -234,5 +253,140 @@ export const api = {
       body,
       signal,
     });
+  },
+
+  analyticsAutomation(
+    range: DateRange = {},
+    signal?: AbortSignal
+  ): Promise<AutomationOpportunity[]> {
+    return request<AutomationOpportunity[]>(
+      `/api/v1/analytics/automation${qs({ ...range })}`,
+      { signal }
+    );
+  },
+
+  // ── Admin / provisioning ─────────────────────────────────────────────────
+  // SUPER_ADMIN only.
+  createOrganization(body: OrganizationCreateRequest): Promise<OrganizationSummary> {
+    return request<OrganizationSummary>("/api/v1/organizations", {
+      method: "POST",
+      body,
+    });
+  },
+
+  createUser(orgId: string, body: UserCreateRequest): Promise<UserSummary> {
+    return request<UserSummary>(
+      `/api/v1/organizations/${encodeURIComponent(orgId)}/users`,
+      { method: "POST", body }
+    );
+  },
+
+  createEmployee(orgId: string, body: EmployeeCreateRequest): Promise<Employee> {
+    return request<Employee>(
+      `/api/v1/organizations/${encodeURIComponent(orgId)}/employees`,
+      { method: "POST", body }
+    );
+  },
+
+  createTeam(orgId: string, name: string, managerUserId?: string): Promise<Team> {
+    return request<Team>(
+      `/api/v1/organizations/${encodeURIComponent(orgId)}/teams${qs({
+        name,
+        manager_user_id: managerUserId,
+      })}`,
+      { method: "POST" }
+    );
+  },
+
+  addTeamMember(teamId: string, employeeId: string): Promise<TeamMember> {
+    return request<TeamMember>(
+      `/api/v1/teams/${encodeURIComponent(teamId)}/members${qs({
+        employee_id: employeeId,
+      })}`,
+      { method: "POST" }
+    );
+  },
+
+  enrollDevice(orgId: string, body: DeviceEnrollRequest): Promise<DeviceEnrollment> {
+    return request<DeviceEnrollment>(
+      `/api/v1/organizations/${encodeURIComponent(orgId)}/devices/enroll`,
+      { method: "POST", body }
+    );
+  },
+
+  revokeDevice(deviceId: string): Promise<DeviceRevokeResult> {
+    return request<DeviceRevokeResult>(
+      `/api/v1/devices/${encodeURIComponent(deviceId)}/revoke`,
+      { method: "POST" }
+    );
+  },
+
+  setAllowlist(orgId: string, domains: string[]): Promise<AllowlistResult> {
+    return request<AllowlistResult>(
+      `/api/v1/organizations/${encodeURIComponent(orgId)}/allowlist`,
+      { method: "PUT", body: domains }
+    );
+  },
+
+  // ── Integrations ─────────────────────────────────────────────────────────
+  // SUPER_ADMIN passes organizationId; org-scoped roles omit it.
+  integrations(
+    organizationId?: string,
+    signal?: AbortSignal
+  ): Promise<IntegrationStatus[]> {
+    return request<IntegrationStatus[]>(
+      `/api/v1/integrations${qs({ organization_id: organizationId })}`,
+      { signal }
+    );
+  },
+
+  setIntegrationCredential(
+    orgId: string,
+    body: IntegrationCredentialRequest
+  ): Promise<IntegrationCredentialResult> {
+    return request<IntegrationCredentialResult>(
+      `/api/v1/integrations/${encodeURIComponent(orgId)}/credentials`,
+      { method: "PUT", body }
+    );
+  },
+
+  syncIntegration(
+    orgId: string,
+    channel: IntegrationChannel
+  ): Promise<IntegrationSyncResult> {
+    return request<IntegrationSyncResult>(
+      `/api/v1/integrations/${encodeURIComponent(orgId)}/${encodeURIComponent(
+        channel
+      )}/sync`,
+      { method: "POST" }
+    );
+  },
+
+  campaigns(
+    orgId: string,
+    channel?: IntegrationChannel,
+    signal?: AbortSignal
+  ): Promise<Campaign[]> {
+    return request<Campaign[]>(
+      `/api/v1/integrations/${encodeURIComponent(orgId)}/campaigns${qs({
+        channel,
+      })}`,
+      { signal }
+    );
+  },
+
+  // ── Audit ──────────────────────────────────────────────────────────────────
+  audit(
+    params: { organizationId?: string; limit?: number; offset?: number } = {},
+    signal?: AbortSignal
+  ): Promise<AuditPage> {
+    return request<AuditPage>(
+      `/api/v1/audit${qs({
+        organization_id: params.organizationId,
+        limit: params.limit !== undefined ? String(params.limit) : undefined,
+        offset: params.offset !== undefined ? String(params.offset) : undefined,
+      })}`,
+      { signal }
+    );
   },
 };

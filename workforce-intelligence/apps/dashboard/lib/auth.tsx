@@ -22,7 +22,12 @@ import {
   setToken,
   UNAUTHORIZED_EVENT,
 } from "./api";
-import type { LoginRequest, Me } from "./types";
+import type { LoginRequest, Me, Role } from "./types";
+
+/** ORG_ADMIN and SUPER_ADMIN can see admin / provisioning surfaces. */
+export function isAdminRole(role: Role | null | undefined): boolean {
+  return role === "ORG_ADMIN" || role === "SUPER_ADMIN";
+}
 
 interface AuthState {
   /** false until the token has been read from localStorage on the client. */

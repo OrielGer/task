@@ -1,7 +1,10 @@
 // TypeScript interfaces mirroring the backend API response shapes.
 // See apps/api/app/schemas.py for the authoritative definitions.
 
-export type Role = "ORG_ADMIN" | "MANAGER" | "EMPLOYEE" | string;
+export type Role = "SUPER_ADMIN" | "ORG_ADMIN" | "MANAGER" | "EMPLOYEE" | string;
+
+/** Roles that can be assigned when provisioning a user within an organization. */
+export type ProvisionableRole = "ORG_ADMIN" | "MANAGER" | "EMPLOYEE";
 
 export interface LoginRequest {
   email: string;
@@ -130,4 +133,151 @@ export interface AIQueryResponse {
 export interface DateRange {
   start?: string;
   end?: string;
+}
+
+// ── Admin / provisioning ─────────────────────────────────────────────────────
+
+export interface OrganizationCreateRequest {
+  name: string;
+  allowlisted_domains: string[];
+}
+
+export interface OrganizationSummary {
+  id: string;
+  name: string;
+}
+
+export interface UserCreateRequest {
+  email: string;
+  full_name: string;
+  password: string;
+  role: ProvisionableRole;
+}
+
+export interface UserSummary {
+  id: string;
+  email: string;
+  role: Role;
+}
+
+export interface EmployeeCreateRequest {
+  display_name: string;
+  email: string;
+  user_id?: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  manager_user_id: string | null;
+}
+
+export interface TeamMember {
+  id: string;
+  team_id: string;
+  employee_id: string;
+}
+
+export interface DeviceEnrollRequest {
+  employee_id: string;
+  name: string;
+}
+
+/** Returned once on enrollment. `device_secret` is not retrievable again. */
+export interface DeviceEnrollment {
+  device_id: string;
+  device_key: string;
+  device_secret: string;
+  note: string;
+}
+
+export interface DeviceRevokeResult {
+  id: string;
+  is_active: boolean;
+}
+
+export interface AllowlistResult {
+  organization_id: string;
+  allowlisted_domains: string[];
+}
+
+// ── Integrations ─────────────────────────────────────────────────────────────
+
+export type IntegrationChannel =
+  | "meta"
+  | "google"
+  | "linkedin"
+  | "crm"
+  | "email"
+  | string;
+
+export interface IntegrationStatus {
+  channel: IntegrationChannel;
+  display_name: string;
+  configured: boolean;
+  is_active: boolean;
+  last_synced_at: string | null;
+}
+
+export interface IntegrationCredentialRequest {
+  channel: IntegrationChannel;
+  display_name: string;
+  /** Secret — never rendered back by the UI. */
+  token: string;
+  config: Record<string, unknown>;
+}
+
+/** Status payload returned when a credential is saved. */
+export interface IntegrationCredentialResult {
+  channel: IntegrationChannel;
+  display_name?: string;
+  configured?: boolean;
+  is_active?: boolean;
+}
+
+export interface IntegrationSyncResult {
+  channel: IntegrationChannel;
+  synced: number;
+}
+
+export type CampaignStatus = "active" | "paused" | "ended" | string;
+
+export interface Campaign {
+  id: string;
+  channel: IntegrationChannel;
+  external_id: string;
+  name: string;
+  status: CampaignStatus;
+  synced_at: string | null;
+}
+
+// ── Analytics automation + audit ─────────────────────────────────────────────
+
+export interface AutomationOpportunity {
+  id: string;
+  workflow_name: string;
+  occurrences_per_week: number;
+  average_seconds: number;
+  employees: string[];
+  estimated_weekly_seconds: number;
+  /** 0..1 */
+  automation_score: number;
+  potential_weekly_savings_seconds: number;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  viewer_user_id: string;
+  employee_id: string | null;
+  action: string;
+  resource_type: string;
+  resource_id: string | null;
+  created_at: string;
+}
+
+export interface AuditPage {
+  items: AuditLogEntry[];
+  total: number;
+  limit: number;
+  offset: number;
 }

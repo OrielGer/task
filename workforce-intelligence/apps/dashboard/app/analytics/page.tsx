@@ -6,9 +6,9 @@ import { api, ApiError } from "@/lib/api";
 import { Protected } from "@/components/Protected";
 import { ErrorNotice, Loading, UsageBars } from "@/components/ui";
 import { formatDuration, formatPercent } from "@/lib/format";
-import type { UsageRow, WorkflowRow } from "@/lib/types";
+import type { AutomationOpportunity, UsageRow, WorkflowRow } from "@/lib/types";
 
-type Tab = "apps" | "websites" | "workflows";
+type Tab = "apps" | "websites" | "workflows" | "automation";
 
 function isAbort(err: unknown): boolean {
   return err instanceof DOMException && err.name === "AbortError";
@@ -19,6 +19,7 @@ function AnalyticsInner() {
   const [apps, setApps] = useState<UsageRow[] | null>(null);
   const [websites, setWebsites] = useState<UsageRow[] | null>(null);
   const [workflows, setWorkflows] = useState<WorkflowRow[] | null>(null);
+  const [automation, setAutomation] = useState<AutomationOpportunity[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,6 +34,10 @@ function AnalyticsInner() {
       api.analyticsApps({}, controller.signal).then(setApps).catch(onErr),
       api.analyticsWebsites({}, controller.signal).then(setWebsites).catch(onErr),
       api.analyticsWorkflows({}, controller.signal).then(setWorkflows).catch(onErr),
+      api
+        .analyticsAutomation({}, controller.signal)
+        .then(setAutomation)
+        .catch(onErr),
     ]);
     return () => controller.abort();
   }, []);
@@ -59,6 +64,12 @@ function AnalyticsInner() {
           onClick={() => setTab("workflows")}
         >
           Workflows
+        </button>
+        <button
+          className={`tab${tab === "automation" ? " active" : ""}`}
+          onClick={() => setTab("automation")}
+        >
+          Automation
         </button>
       </div>
 
@@ -109,6 +120,50 @@ function AnalyticsInner() {
                       <td className="muted">{w.employees?.length ?? 0}</td>
                       <td>{formatPercent(w.automation_score)}</td>
                       <td>{formatDuration(w.potential_weekly_savings_seconds)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {tab === "automation" ? (
+        <div className="card">
+          <h2>Automation opportunities</h2>
+          <p className="muted small" style={{ marginBottom: 14 }}>
+            Repetitive workflows ranked by how readily they could be automated and
+            the time that would be freed up each week.
+          </p>
+          {!automation ? (
+            <Loading />
+          ) : automation.length === 0 ? (
+            <div className="notice">No automation opportunities detected for this range.</div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Workflow</th>
+                    <th>Occurrences / week</th>
+                    <th>Avg duration</th>
+                    <th>Employees</th>
+                    <th>Automation score</th>
+                    <th>Potential weekly saving</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {automation.map((a) => (
+                    <tr key={a.id}>
+                      <td>
+                        <strong>{a.workflow_name}</strong>
+                      </td>
+                      <td>{a.occurrences_per_week}</td>
+                      <td>{formatDuration(a.average_seconds)}</td>
+                      <td className="muted">{a.employees?.length ?? 0}</td>
+                      <td>{formatPercent(a.automation_score)}</td>
+                      <td>{formatDuration(a.potential_weekly_savings_seconds)}</td>
                     </tr>
                   ))}
                 </tbody>

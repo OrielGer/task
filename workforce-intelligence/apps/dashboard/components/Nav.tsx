@@ -3,12 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { useAuth } from "@/lib/auth";
+import { isAdminRole, useAuth } from "@/lib/auth";
 
 const LINKS = [
   { href: "/", label: "Overview" },
   { href: "/analytics", label: "Analytics" },
   { href: "/ai", label: "AI Assistant" },
+];
+
+// Shown only to ORG_ADMIN / SUPER_ADMIN.
+const ADMIN_LINKS = [
+  { href: "/admin", label: "Admin" },
+  { href: "/integrations", label: "Integrations" },
+  { href: "/audit", label: "Audit" },
 ];
 
 export function Nav() {
@@ -21,6 +28,8 @@ export function Nav() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
+  const links = isAdminRole(me?.role) ? [...LINKS, ...ADMIN_LINKS] : LINKS;
+
   return (
     <header className="app-header">
       <div className="app-header-inner">
@@ -31,7 +40,7 @@ export function Nav() {
         {token ? (
           <>
             <nav className="nav-links">
-              {LINKS.map((l) => (
+              {links.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
