@@ -95,7 +95,12 @@ def seed() -> None:
             device_key=DEMO_DEVICE_KEY, credential_hash=hash_device_secret(DEMO_DEVICE_SECRET),
             is_active=True, agent_version="0.1.0", last_heartbeat_at=datetime.now(UTC),
         )
-        db.add(device)
+        maya_device = Device(
+            organization_id=org.id, employee_id=maya.id, name="Maya-Workstation",
+            device_key="dev_demo_maya", credential_hash=hash_device_secret("demo-maya-secret"),
+            is_active=True, agent_version="0.1.0", last_heartbeat_at=datetime.now(UTC),
+        )
+        db.add_all([device, maya_device])
         db.flush()
 
         # Seed the last 5 days with a recurring CRM → Docs → Ads pattern so the
@@ -104,12 +109,26 @@ def seed() -> None:
         for day_offset in range(5):
             day = today - timedelta(days=day_offset)
             _seed_day(db, org.id, daniel.id, device.id, day, with_content=(day_offset == 0))
+        # A lighter two days for Maya so team analytics show two contributors.
+        for day_offset in range(2):
+            day = today - timedelta(days=day_offset)
+            _seed_day(db, org.id, maya.id, maya_device.id, day, with_content=False)
         db.commit()
 
         # Build sessions for each seeded day so timeline/sessions/workflows populate.
-        for day_offset in range(5):
-            day = today - timedelta(days=day_offset)
-            build_sessions(db, org.id, daniel.id, day, day + timedelta(days=1))
+        for emp in (daniel, maya):
+            for day_offset in range(5):
+                day = today - timedelta(days=day_offset)
+                build_sessions(db, org.id, emp.id, day, day + timedelta(days=1))
+
+        # Populate the campaigns mirror (sandbox mode needs no credentials).
+        try:
+            from app.services.integrations import sync_channel
+
+            for channel in ("meta", "crm"):
+                sync_channel(db, org.id, channel)
+        except Exception as exc:  # non-fatal for the demo
+            print(f"[seed] campaign sync skipped: {exc}")
 
         print("[seed] demo data created.")
         print("[seed] ORG_ADMIN  admin@acme.example / Passw0rd!admin")
