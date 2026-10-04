@@ -49,6 +49,23 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     anthropic_api_key: str = ""
     gemini_api_key: str = ""
+    # Use the AI provider to classify work sessions (falls back to deterministic
+    # rules when the provider is mock or returns unparseable output).
+    ai_session_classifier: bool = False
+
+    # Encryption key for integration tokens at rest (falls back to jwt_secret).
+    integration_enc_key: str = ""
+    # Marketing integration mode: live | sandbox. "sandbox" returns deterministic
+    # sample data with no network calls (used for demos/tests).
+    integration_mode: str = "sandbox"
+
+    # Background scheduler (retention, nightly summaries, automation recompute).
+    scheduler_enabled: bool = False
+    scheduler_summary_hour_utc: int = 2  # nightly job hour
+
+    # Default pagination page size for list endpoints.
+    page_size_default: int = 50
+    page_size_max: int = 200
 
     @property
     def cors_origin_list(self) -> list[str]:

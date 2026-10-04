@@ -1,6 +1,8 @@
 """FastAPI application entrypoint."""
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
@@ -8,7 +10,18 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import get_settings
 from app.rate_limit import limiter
-from app.routers import admin, agent, ai, analytics, auth, employees, teams
+from app.routers import admin, agent, ai, analytics, audit, auth, employees, integrations, teams
+from app.services.scheduler import shutdown_scheduler, start_scheduler
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Start background jobs only when enabled (off by default / in tests).
+    start_scheduler()
+    try:
+        yield
+    finally:
+        shutdown_scheduler()
 
 
 class SecureHeadersMiddleware(BaseHTTPMiddleware):
@@ -47,6 +60,7 @@ def create_app() -> FastAPI:
             "Transparent, consent-based workforce analytics for company-owned "
             "devices. Outbound metadata ingestion only — no remote command channel."
         ),
+        lifespan=lifespan,
     )
 
     app.add_middleware(SecureHeadersMiddleware)
@@ -66,6 +80,8 @@ def create_app() -> FastAPI:
     app.include_router(teams.router)
     app.include_router(analytics.router)
     app.include_router(ai.router)
+    app.include_router(integrations.router)
+    app.include_router(audit.router)
 
     @app.get("/health", tags=["meta"])
     def health() -> dict:

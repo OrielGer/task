@@ -37,6 +37,8 @@ router = APIRouter(prefix="/api/v1/employees", tags=["employees"])
 @router.get("", response_model=list[EmployeeOut])
 def list_employees(
     organization_id: str | None = None,
+    limit: int = Query(default=200, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
     ctx: AuthContext = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[Employee]:
@@ -44,7 +46,14 @@ def list_employees(
     ids = visible_employee_ids(db, ctx, org)
     if not ids:
         return []
-    return list(db.execute(select(Employee).where(Employee.id.in_(ids))).scalars())
+    stmt = (
+        select(Employee)
+        .where(Employee.id.in_(ids))
+        .order_by(Employee.display_name)
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(db.execute(stmt).scalars())
 
 
 def _load_viewable(db: Session, ctx: AuthContext, employee_id: str) -> Employee:

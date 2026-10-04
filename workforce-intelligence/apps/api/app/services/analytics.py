@@ -8,10 +8,10 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from app.models import ActivityEvent, BrowserEvent, WorkSession
+from app.models import ActivityEvent, AutomationOpportunity, BrowserEvent, WorkSession
 from app.services.work_sessions import system_for_domain
 
 
@@ -148,3 +148,41 @@ def detect_workflows(
         )
     results.sort(key=lambda r: r["potential_weekly_savings_seconds"], reverse=True)
     return results[:25]
+
+
+def recompute_automation_opportunities(
+    db: Session,
+    organization_id: str,
+    employee_ids: list[str],
+    start: datetime,
+    end: datetime,
+) -> list[AutomationOpportunity]:
+    """Detect workflows and persist them as AutomationOpportunity rows.
+
+    Replaces the organization's existing rows so the table reflects the latest
+    analysis window. Intended for admins / the scheduler (org-wide input).
+    """
+    workflows = detect_workflows(db, organization_id, employee_ids, start, end)
+    db.execute(
+        delete(AutomationOpportunity).where(
+            AutomationOpportunity.organization_id == organization_id
+        )
+    )
+    rows: list[AutomationOpportunity] = []
+    for w in workflows:
+        row = AutomationOpportunity(
+            organization_id=organization_id,
+            workflow_name=w["workflow_name"][:255],
+            occurrences_per_week=int(round(w["occurrences_per_week"])),
+            average_seconds=w["average_seconds"],
+            employees=",".join(w["employees"]),
+            estimated_weekly_seconds=w["estimated_weekly_seconds"],
+            automation_score=w["automation_score"],
+            potential_weekly_savings_seconds=w["potential_weekly_savings_seconds"],
+        )
+        db.add(row)
+        rows.append(row)
+    db.commit()
+    for r in rows:
+        db.refresh(r)
+    return rows

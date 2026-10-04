@@ -134,7 +134,11 @@ def build_sessions(
     persist: bool = True,
 ) -> list[WorkSession]:
     """Rebuild work sessions for an employee in [start, end)."""
-    classifier = classifier or DeterministicClassifier()
+    if classifier is None:
+        # Lazy import avoids a circular import (classifier imports this module).
+        from app.services.ai.classifier import get_default_classifier
+
+        classifier = get_default_classifier()
     break_gap = get_settings().session_idle_break_seconds
     intervals = _collect_intervals(db, employee_id, start, end)
 

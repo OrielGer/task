@@ -355,3 +355,52 @@ class AuditLog(Base):
     resource_type: Mapped[str] = mapped_column(String(100), default="")
     resource_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class IntegrationCredential(Base):
+    """Per-organization credentials for a marketing integration.
+
+    The secret (OAuth/access token) is stored ENCRYPTED at rest via
+    app.crypto; non-secret config lives in ``config_json``. One active row per
+    (organization, channel).
+    """
+
+    __tablename__ = "integration_credentials"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "channel", name="uq_integration_org_channel"),
+    )
+
+    id: Mapped[str] = PK()
+    organization_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    channel: Mapped[str] = mapped_column(String(32), nullable=False)  # meta|google|linkedin|crm|email
+    display_name: Mapped[str] = mapped_column(String(255), default="")
+    secret_encrypted: Mapped[str] = mapped_column(Text, default="")  # encrypted token
+    config_json: Mapped[str] = mapped_column(Text, default="{}")  # non-secret config
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, onupdate=_now
+    )
+
+
+class Campaign(Base):
+    """A marketing campaign synced from an external system (read-only mirror)."""
+
+    __tablename__ = "campaigns"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "channel", "external_id", name="uq_campaign_ext"),
+        Index("ix_campaign_org_channel", "organization_id", "channel"),
+    )
+
+    id: Mapped[str] = PK()
+    organization_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    channel: Mapped[str] = mapped_column(String(32), nullable=False)
+    external_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    name: Mapped[str] = mapped_column(String(512), default="")
+    status: Mapped[str] = mapped_column(String(64), default="")
+    synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)

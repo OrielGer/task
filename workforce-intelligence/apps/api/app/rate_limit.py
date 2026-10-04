@@ -1,7 +1,9 @@
-"""Lightweight in-memory fixed-window rate limiter.
+"""Rate limiting with a Redis backend and an in-memory fallback.
 
-Adequate for development and single-process deployments. For multi-process /
-multi-node production, back this with Redis (REDIS_URL is already configured).
+If ``REDIS_URL`` is set and reachable, a shared fixed-window counter is kept in
+Redis (correct across processes/nodes). Otherwise, or on any Redis error, it
+falls back to a per-process in-memory counter. Fail-open on backend errors so a
+Redis outage never takes the API down.
 """
 from __future__ import annotations
 
@@ -12,7 +14,7 @@ from collections import defaultdict
 from app.config import get_settings
 
 
-class RateLimiter:
+class InMemoryRateLimiter:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._buckets: dict[str, tuple[int, float]] = defaultdict(lambda: (0, 0.0))
@@ -33,4 +35,40 @@ class RateLimiter:
             return True
 
 
-limiter = RateLimiter()
+class RedisRateLimiter:
+    def __init__(self) -> None:
+        self._fallback = InMemoryRateLimiter()
+        self._client = None
+        self._init_client()
+
+    def _init_client(self) -> None:
+        s = get_settings()
+        if not s.redis_url:
+            return
+        try:
+            import redis
+
+            self._client = redis.Redis.from_url(s.redis_url, socket_timeout=0.25)
+        except Exception:
+            self._client = None
+
+    def allow(self, key: str) -> bool:
+        if self._client is None:
+            return self._fallback.allow(key)
+        s = get_settings()
+        try:
+            rkey = f"rl:{key}"
+            count = self._client.incr(rkey)
+            if count == 1:
+                self._client.expire(rkey, s.rate_limit_window_seconds)
+            return int(count) <= s.rate_limit_requests
+        except Exception:
+            # Fail open to the in-memory limiter on any Redis error.
+            return self._fallback.allow(key)
+
+
+def _build():
+    return RedisRateLimiter() if get_settings().redis_url else InMemoryRateLimiter()
+
+
+limiter = _build()

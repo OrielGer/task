@@ -213,6 +213,21 @@ def revoke_device(
     return {"id": device.id, "is_active": device.is_active}
 
 
+@router.post("/jobs/{job_name}")
+def run_job(
+    job_name: str,
+    ctx: AuthContext = Depends(require_roles(Role.SUPER_ADMIN)),
+) -> dict:
+    """Manually trigger a scheduled job (retention | summaries | automation)."""
+    from app.services.scheduler import JOBS
+
+    job = JOBS.get(job_name)
+    if job is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Unknown job '{job_name}'")
+    result = job()
+    return {"job": job_name, "result": result}
+
+
 @router.put("/organizations/{organization_id}/allowlist")
 def set_allowlist(
     organization_id: str,

@@ -219,3 +219,55 @@ class AIQueryResponse(BaseModel):
     answer: str
     provider: str
     used_scope: str
+
+
+# ── Integrations ──────────────────────────────────────────────────────────────
+class IntegrationCredentialIn(BaseModel):
+    channel: str  # meta | google | linkedin | crm | email
+    display_name: str = ""
+    token: str = ""  # secret; stored encrypted, never returned
+    config: dict = {}
+
+
+class IntegrationStatusOut(BaseModel):
+    channel: str
+    display_name: str
+    configured: bool
+    is_active: bool
+    last_synced_at: datetime | None = None
+
+
+class SyncResult(BaseModel):
+    channel: str
+    synced: int
+
+
+class CampaignOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    channel: str
+    external_id: str
+    name: str
+    status: str
+    synced_at: datetime
+
+
+# ── Audit ─────────────────────────────────────────────────────────────────────
+class AuditLogOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    viewer_user_id: str | None = None
+    employee_id: str | None = None
+    action: str
+    resource_type: str
+    resource_id: str | None = None
+    created_at: datetime
+
+
+class Page(BaseModel):
+    """Generic pagination envelope."""
+
+    items: list
+    total: int
+    limit: int
+    offset: int
