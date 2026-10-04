@@ -31,3 +31,6 @@ obj/
 .DS_Store
 .idea/
 .vscode/
+
+# extension build/test output
+apps/browser-extension/dist-test/
