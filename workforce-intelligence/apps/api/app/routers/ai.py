@@ -34,16 +34,20 @@ def ai_query(
     employees the asker may see and pass only that set to the pipeline. The LLM
     never receives data outside this scope and never touches the DB directly.
     """
-    org = resolve_org(ctx, None)
     scope_label = "organization"
 
+    # Resolve the org from the target entity when one is given (so a SUPER_ADMIN
+    # can scope to a specific employee/team without passing organization_id);
+    # otherwise require an org for the org-wide case.
     if body.employee_id:
         emp = load_employee_or_404(db, ctx, body.employee_id)
         assert_can_view_employee(db, ctx, emp)
+        org = emp.organization_id
         employee_ids = [emp.id]
         scope_label = f"employee:{emp.display_name}"
     elif body.team_id:
         team = manager_team_or_403(db, ctx, body.team_id)
+        org = team.organization_id
         employee_ids = list(
             db.execute(
                 select(TeamMember.employee_id).where(TeamMember.team_id == team.id)
@@ -51,6 +55,7 @@ def ai_query(
         )
         scope_label = f"team:{team.name}"
     else:
+        org = resolve_org(ctx, body.organization_id)
         employee_ids = visible_employee_ids(db, ctx, org)
 
     if not employee_ids:

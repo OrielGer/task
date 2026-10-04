@@ -13,6 +13,7 @@ import type {
   AutomationOpportunity,
   Campaign,
   ContentItem,
+  CurrentActivity,
   ContentVersion,
   DateRange,
   DeviceEnrollment,
@@ -177,6 +178,13 @@ export const api = {
 
   employee(id: string, signal?: AbortSignal): Promise<Employee> {
     return request<Employee>(`/api/v1/employees/${encodeURIComponent(id)}`, { signal });
+  },
+
+  currentActivity(id: string, signal?: AbortSignal): Promise<CurrentActivity> {
+    return request<CurrentActivity>(
+      `/api/v1/employees/${encodeURIComponent(id)}/current`,
+      { signal }
+    );
   },
 
   timeline(id: string, range: DateRange = {}, signal?: AbortSignal): Promise<TimelineEntry[]> {

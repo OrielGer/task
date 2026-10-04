@@ -21,6 +21,7 @@ from app.schemas import (
     AISummaryOut,
     ContentItemOut,
     ContentVersionOut,
+    CurrentActivity,
     EmployeeOut,
     TimelineEntry,
     UsageRow,
@@ -69,6 +70,45 @@ def get_employee(
     db: Session = Depends(get_db),
 ) -> Employee:
     return _load_viewable(db, ctx, employee_id)
+
+
+@router.get("/{employee_id}/current", response_model=CurrentActivity)
+def current_activity(
+    employee_id: str,
+    ctx: AuthContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> CurrentActivity:
+    """The employee's most recent focus interval (application or website)."""
+    emp = _load_viewable(db, ctx, employee_id)
+    latest_app = db.execute(
+        select(ActivityEvent).where(ActivityEvent.employee_id == emp.id)
+        .order_by(ActivityEvent.ended_at.desc()).limit(1)
+    ).scalar_one_or_none()
+    latest_web = db.execute(
+        select(BrowserEvent).where(BrowserEvent.employee_id == emp.id)
+        .order_by(BrowserEvent.ended_at.desc()).limit(1)
+    ).scalar_one_or_none()
+
+    # Pick whichever ended most recently.
+    chosen = None
+    if latest_app and latest_web:
+        chosen = latest_app if latest_app.ended_at >= latest_web.ended_at else latest_web
+    else:
+        chosen = latest_app or latest_web
+
+    out = CurrentActivity(status=emp.status.value, last_seen_at=emp.last_seen_at)
+    if chosen is not None:
+        now = datetime.now(UTC)
+        ended = chosen.ended_at
+        if ended.tzinfo is None:
+            ended = ended.replace(tzinfo=UTC)
+        out.is_live = (now - ended).total_seconds() <= 300  # within 5 minutes
+        out.since = chosen.started_at
+        if isinstance(chosen, ActivityEvent):
+            out.kind, out.label, out.detail = "application", chosen.application, chosen.window_title
+        else:
+            out.kind, out.label, out.detail = "website", chosen.domain, chosen.page_title
+    return out
 
 
 @router.get("/{employee_id}/timeline", response_model=list[TimelineEntry])

@@ -6,8 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.deps import AuthContext, get_current_user, manager_team_or_403
-from app.models import Employee, TeamMember
+from app.deps import AuthContext, manager_team_or_403, require_roles
+from app.models import Employee, Role, TeamMember
 from app.scoping import parse_range
 from app.services import analytics
 
@@ -19,9 +19,12 @@ def team_activity(
     team_id: str,
     start: str | None = None,
     end: str | None = None,
-    ctx: AuthContext = Depends(get_current_user),
+    # Team activity is for admins and managers only; EMPLOYEE is excluded
+    # (an employee sees only their own data via /employees/{self}).
+    ctx: AuthContext = Depends(require_roles(Role.SUPER_ADMIN, Role.ORG_ADMIN, Role.MANAGER)),
     db: Session = Depends(get_db),
 ) -> dict:
+    # manager_team_or_403 further restricts MANAGER to teams they manage.
     team = manager_team_or_403(db, ctx, team_id)
     s, e = parse_range(start, end)
     emp_ids = list(

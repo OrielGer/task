@@ -153,6 +153,18 @@ class TimelineEntry(BaseModel):
     active_seconds: int
 
 
+class CurrentActivity(BaseModel):
+    """What an employee is working on right now (most recent focus interval)."""
+
+    status: str  # active | idle | offline
+    kind: str | None = None  # application | website
+    label: str | None = None  # app name or domain
+    detail: str | None = None  # window/page title
+    since: datetime | None = None
+    last_seen_at: datetime | None = None
+    is_live: bool = False  # true if the latest event is within the live window
+
+
 class UsageRow(BaseModel):
     label: str
     active_seconds: int
@@ -213,6 +225,8 @@ class AIQueryRequest(BaseModel):
     question: str
     employee_id: str | None = None
     team_id: str | None = None
+    # For SUPER_ADMIN org-wide queries (others are pinned to their own org).
+    organization_id: str | None = None
 
 
 class AIQueryResponse(BaseModel):

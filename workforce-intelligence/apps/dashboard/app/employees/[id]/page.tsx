@@ -25,6 +25,7 @@ import {
 import type {
   AIInsight,
   AISummary,
+  CurrentActivity,
   Employee,
   TimelineEntry,
   UsageRow,
@@ -40,6 +41,7 @@ function EmployeeInner({ id }: { id: string }) {
 
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [employeeErr, setEmployeeErr] = useState<string | null>(null);
+  const [current, setCurrent] = useState<CurrentActivity | null>(null);
 
   const [timeline, setTimeline] = useState<TimelineEntry[] | null>(null);
   const [apps, setApps] = useState<UsageRow[] | null>(null);
@@ -60,6 +62,18 @@ function EmployeeInner({ id }: { id: string }) {
         if (isAbort(err)) return;
         if (err instanceof ApiError && err.status === 401) return;
         setEmployeeErr(err instanceof Error ? err.message : "Failed to load employee.");
+      });
+    return () => controller.abort();
+  }, [id]);
+
+  // Current activity (most recent focus interval; date-independent).
+  useEffect(() => {
+    const controller = new AbortController();
+    api
+      .currentActivity(id, controller.signal)
+      .then(setCurrent)
+      .catch(() => {
+        /* non-critical widget; ignore load errors */
       });
     return () => controller.abort();
   }, [id]);
@@ -127,6 +141,28 @@ function EmployeeInner({ id }: { id: string }) {
           <StatusBadge status={employee.status} />
         </div>
       )}
+
+      {current && current.label ? (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <p className="small muted" style={{ marginBottom: 2 }}>
+                {current.is_live ? "Currently working on" : "Last worked on"}
+              </p>
+              <strong>{current.label}</strong>
+              {current.detail ? <span className="muted"> — {current.detail}</span> : null}
+              {current.since ? (
+                <p className="small muted" style={{ marginTop: 2, marginBottom: 0 }}>
+                  since {formatRelative(current.since)}
+                </p>
+              ) : null}
+            </div>
+            <span className={`badge ${current.is_live ? "badge-active" : ""}`}>
+              {current.is_live ? "live" : current.kind ?? ""}
+            </span>
+          </div>
+        </div>
+      ) : null}
 
       <div className="card">
         <div className="row" style={{ justifyContent: "space-between" }}>

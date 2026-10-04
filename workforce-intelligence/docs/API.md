@@ -61,6 +61,7 @@ external_reference?, content, is_final, captured_at}`
 |--------|------|-------|
 | GET | `/api/v1/employees` | Visible employees for the caller's role |
 | GET | `/api/v1/employees/{id}` | Single employee (role-visibility enforced) |
+| GET | `/api/v1/employees/{id}/current` | Current activity (latest focus interval; `is_live` if within 5 min) |
 | GET | `/api/v1/employees/{id}/timeline?start=&end=` | Merged app+website timeline |
 | GET | `/api/v1/employees/{id}/applications?start=&end=` | Per-app usage |
 | GET | `/api/v1/employees/{id}/websites?start=&end=` | Per-domain usage |

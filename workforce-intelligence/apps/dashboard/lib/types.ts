@@ -38,6 +38,16 @@ export interface Employee {
   last_seen_at: string | null;
 }
 
+export interface CurrentActivity {
+  status: EmployeeStatus;
+  kind: "application" | "website" | null;
+  label: string | null;
+  detail: string | null;
+  since: string | null;
+  last_seen_at: string | null;
+  is_live: boolean;
+}
+
 export type TimelineKind = "application" | "website" | string;
 
 export interface TimelineEntry {
