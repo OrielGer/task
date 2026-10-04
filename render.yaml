@@ -1,0 +1,61 @@
+# Render Blueprint — one-click deploy of the Workforce Intelligence platform.
+#
+# Provisions a managed Postgres, the API (migrations on boot), and the dashboard.
+# Deploy: push this repo to GitHub → render.com → New → Blueprint → pick the repo.
+# After the first deploy, set the two cross-URLs noted below and redeploy.
+databases:
+  - name: wfi-db
+    databaseName: workforce_intelligence
+    user: wfi
+    plan: free
+
+services:
+  # ─── Backend API ────────────────────────────────────────────────────────────
+  - type: web
+    name: wfi-api
+    runtime: docker
+    rootDir: workforce-intelligence/apps/api
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    # Migrate on boot, then serve. No demo seed in production (SEED_DEMO=false).
+    dockerCommand: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wfi-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: INTEGRATION_ENC_KEY
+        generateValue: true
+      - key: API_ENV
+        value: production
+      - key: SEED_DEMO
+        value: "false"
+      - key: AI_PROVIDER
+        value: mock
+      - key: INTEGRATION_MODE
+        value: sandbox
+      - key: SCHEDULER_ENABLED
+        value: "true"
+      # Set to the dashboard's URL after the first deploy, e.g.
+      # https://wfi-dashboard.onrender.com  (then redeploy the API).
+      - key: CORS_ORIGINS
+        sync: false
+
+  # ─── Dashboard ────────────────────────────────────────────────────────────
+  - type: web
+    name: wfi-dashboard
+    runtime: docker
+    rootDir: workforce-intelligence/apps/dashboard
+    dockerfilePath: ./Dockerfile
+    plan: free
+    dockerCommand: sh -c "npm run start -- -p $PORT"
+    envVars:
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      # NEXT_PUBLIC_* is baked at build time. Set to the API's URL, e.g.
+      # https://wfi-api.onrender.com  (then trigger a dashboard redeploy).
+      - key: NEXT_PUBLIC_API_BASE_URL
+        sync: false

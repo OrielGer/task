@@ -14,6 +14,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
+from app.config import get_settings
 from app.db import SessionLocal
 from app.models import (
     ActivityEvent,
@@ -42,6 +43,9 @@ def _cid() -> str:
 
 
 def seed() -> None:
+    if not get_settings().seed_demo:
+        print("[seed] SEED_DEMO is false; skipping demo data (production).")
+        return
     db = SessionLocal()
     try:
         if db.execute(select(Organization).where(Organization.name == DEMO_ORG)).scalar_one_or_none():

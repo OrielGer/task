@@ -15,7 +15,7 @@ class Base(DeclarativeBase):
 
 def _make_engine():
     settings = get_settings()
-    url = settings.database_url
+    url = settings.sqlalchemy_database_url
     connect_args = {}
     if url.startswith("sqlite"):
         # Needed for SQLite when used across threads (tests, single-proc dev).

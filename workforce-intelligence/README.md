@@ -113,6 +113,7 @@ See [`.env.example`](./.env.example) for all configuration
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — system design & data flow
 - [SECURITY.md](./SECURITY.md) — boundaries, controls, threat model
+- [DEPLOY.md](./DEPLOY.md) — production deployment (your VPS, Render, Fly.io)
 - [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) — milestones
 - [docs/DATABASE.md](./docs/DATABASE.md) — schema reference
 - [docs/API.md](./docs/API.md) — REST API reference

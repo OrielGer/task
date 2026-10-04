@@ -67,9 +67,29 @@ class Settings(BaseSettings):
     page_size_default: int = 50
     page_size_max: int = 200
 
+    # Seed demo data (org/users/employees). MUST be false in production — the
+    # demo accounts use well-known passwords.
+    seed_demo: bool = True
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def sqlalchemy_database_url(self) -> str:
+        """Normalize managed-Postgres URLs to the psycopg (v3) driver.
+
+        Hosts like Render/Heroku hand out ``postgres://`` or ``postgresql://``
+        URLs; we use psycopg v3, which needs the ``postgresql+psycopg://``
+        prefix. SQLite and already-qualified URLs pass through unchanged.
+        """
+        url = self.database_url
+        if url.startswith("postgres://"):
+            return "postgresql+psycopg://" + url[len("postgres://") :]
+        scheme = url.split("://", 1)[0]
+        if url.startswith("postgresql://") and "+" not in scheme:
+            return "postgresql+psycopg://" + url[len("postgresql://") :]
+        return url
 
 
 @lru_cache
