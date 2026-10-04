@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import jwt
@@ -52,7 +52,7 @@ def verify_signature(secret: str, body: bytes, signature: str) -> bool:
 # ── JWT ────────────────────────────────────────────────────────────────────────
 def create_access_token(*, user_id: str, organization_id: str | None, role: str) -> str:
     settings = get_settings()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": user_id,
         "org": organization_id,

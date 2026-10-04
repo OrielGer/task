@@ -1,7 +1,7 @@
 """Configurable retention cleanup jobs (see SECURITY.md §7)."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import delete
 from sqlalchemy.orm import Session
@@ -23,7 +23,7 @@ def run_retention(db: Session, now: datetime | None = None) -> dict[str, int]:
     function so it is easy to test and to call from a management command.
     """
     s = get_settings()
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     counts: dict[str, int] = {}
 
     def _cutoff(days: int) -> datetime:
@@ -39,7 +39,7 @@ def run_retention(db: Session, now: datetime | None = None) -> dict[str, int]:
     counts["draft_versions"] = _purge(
         db,
         ContentVersion,
-        (ContentVersion.is_final == False)  # noqa: E712
+        (ContentVersion.is_final == False)
         & (ContentVersion.created_at < _cutoff(s.retention_content_versions_days)),
     )
     counts["ai_summaries"] = _purge(

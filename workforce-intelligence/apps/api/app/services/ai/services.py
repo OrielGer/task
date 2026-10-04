@@ -8,7 +8,7 @@ provider. Model output is treated as text.
 from __future__ import annotations
 
 from collections import Counter
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -27,7 +27,7 @@ from app.services.work_sessions import system_for_domain
 
 
 def _day_bounds(date_str: str) -> tuple[datetime, datetime]:
-    day = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    day = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=UTC)
     return day, day + timedelta(days=1)
 
 

@@ -1,7 +1,7 @@
 """Content-versioning tests: dedup, increments, final snapshots."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from tests.conftest import auth, device_headers, provision_org
 
@@ -16,7 +16,7 @@ def _content(cid: str, text: str, is_final: bool = False, ref: str = "gdoc:abc")
         "external_reference": ref,
         "content": text,
         "is_final": is_final,
-        "captured_at": datetime.now(timezone.utc).isoformat(),
+        "captured_at": datetime.now(UTC).isoformat(),
     }
 
 

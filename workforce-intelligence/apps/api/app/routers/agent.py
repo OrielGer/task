@@ -7,7 +7,7 @@ returned is an acknowledgement and non-executable collector config.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -65,7 +65,7 @@ def heartbeat(
     device: Device = Depends(get_authenticated_device),
     db: Session = Depends(get_db),
 ) -> dict:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     device.last_heartbeat_at = now
     if body.agent_version:
         device.agent_version = body.agent_version[:50]
@@ -108,7 +108,7 @@ def collector_config(
 def _touch_presence(db: Session, device: Device, *, is_locked: bool) -> None:
     emp = db.get(Employee, device.employee_id)
     if emp is not None:
-        emp.last_seen_at = datetime.now(timezone.utc)
+        emp.last_seen_at = datetime.now(UTC)
         if emp.status == EmployeeStatus.offline and not is_locked:
             emp.status = EmployeeStatus.active
         db.commit()

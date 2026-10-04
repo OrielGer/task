@@ -11,12 +11,10 @@ Create Date: 2026-10-04
 """
 from __future__ import annotations
 
-from alembic import op
-
-from app.db import Base
-
 # Ensure all models are registered on Base.metadata.
 import app.models  # noqa: F401
+from alembic import op
+from app.db import Base
 
 revision = "0001_initial"
 down_revision = None

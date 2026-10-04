@@ -76,10 +76,30 @@ external_reference?, content, is_final, captured_at}`
 | GET | `/api/v1/teams/{id}/activity?start=&end=` | ORG_ADMIN, MANAGER(own), SUPER_ADMIN | Members + app/website usage |
 | GET | `/api/v1/analytics/apps?start=&end=` | any (scope = visible employees) | Aggregate app usage |
 | GET | `/api/v1/analytics/websites?start=&end=` | any | Aggregate website usage |
-| GET | `/api/v1/analytics/workflows?start=&end=` | any | Repetitive-workflow / automation opportunities |
+| GET | `/api/v1/analytics/workflows?start=&end=` | any | Repetitive-workflow detection (on the fly) |
+| GET | `/api/v1/analytics/automation?start=&end=` | any | Automation opportunities; admins recompute+persist org-wide, others read scoped |
 
 SUPER_ADMIN must pass `?organization_id=` to analytics endpoints; others are
 pinned to their own org automatically.
+
+## Integrations (marketing connectors)
+| Method | Path | Roles | Notes |
+|--------|------|-------|-------|
+| GET | `/api/v1/integrations?organization_id=` | any | Status of each channel (meta/google/linkedin/crm/email) |
+| PUT | `/api/v1/integrations/{orgId}/credentials` | SUPER_ADMIN, ORG_ADMIN | `{channel, display_name, token, config}` — token stored encrypted at rest |
+| POST | `/api/v1/integrations/{orgId}/{channel}/sync` | SUPER_ADMIN, ORG_ADMIN | Pull campaigns (sandbox mode needs no credential) |
+| GET | `/api/v1/integrations/{orgId}/campaigns?channel=` | any | Synced campaign mirror |
+
+`INTEGRATION_MODE=sandbox` (default) returns deterministic sample data with no
+network calls; `live` calls the real provider APIs with the decrypted token.
+
+## Audit & jobs
+| Method | Path | Roles | Notes |
+|--------|------|-------|-------|
+| GET | `/api/v1/audit?organization_id=&limit=&offset=` | SUPER_ADMIN, ORG_ADMIN | Paginated audit log (`{items,total,limit,offset}`) |
+| POST | `/api/v1/jobs/{job}` | SUPER_ADMIN | Manually run a scheduled job: `retention` \| `summaries` \| `automation` |
+
+Background jobs also run on a schedule when `SCHEDULER_ENABLED=true`.
 
 ## AI
 | Method | Path | Notes |

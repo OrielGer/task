@@ -55,15 +55,35 @@ Every item of the required MVP vertical slice works end-to-end:
   input validation, TLS-ready.
 - Tests: 50 backend tests + 9 extension redaction tests, all passing.
 
-## Explicitly deferred (clearly stubbed, not hidden)
-- Live marketing integrations (interfaces exist; connectors in M2) —
-  `apps/api/app/services/integrations.py` methods raise `NotImplementedError`
-  with a dated message.
-- AI-based session classification (deterministic rules ship now behind the
-  same interface).
-- Background scheduler for retention/summaries (the functions are pure and
-  callable; wiring to a scheduler is M2).
-- Redis-backed distributed rate limiting (in-memory limiter ships now).
+## Milestone 2 — implemented (verified)
+
+- **Marketing integrations** behind `MarketingIntegration`: HubSpot, Meta Ads,
+  and LinkedIn Ads live `httpx` connectors (Google Ads / Email documented
+  stubs), a **sandbox mode** (default, fully offline) for demos/tests, per-org
+  credentials **encrypted at rest** (Fernet), a synced `campaigns` mirror, and
+  configure/sync/read endpoints.
+- **AI session classification** (`AISessionClassifier`) behind the existing
+  `SessionClassifier`, opt-in via `AI_SESSION_CLASSIFIER`, with a safe
+  deterministic fallback when the provider is mock or returns unparseable
+  output.
+- **Background scheduler** (APScheduler): retention cleanup, nightly AI
+  summaries, and automation recompute, wired into the app lifespan
+  (`SCHEDULER_ENABLED`), plus a SUPER_ADMIN manual trigger endpoint.
+- **Persisted automation opportunities** + `GET /analytics/automation`.
+- **Paginated audit endpoint** (`GET /audit`) and list pagination.
+- **Redis-backed rate limiter** with in-memory fail-open fallback.
+- **CI** (GitHub Actions): backend pytest + lint, extension build/typecheck/
+  tests, dashboard typecheck/build.
+- **Dashboard**: admin provisioning UI, integrations config, audit viewer, and
+  automation view (see `apps/dashboard`).
+
+Backend test count: **69 passing**.
+
+## Still deferred (clearly stubbed, not hidden)
+- Google Ads / Email **live** connectors (sandbox works; live raises a clear,
+  dated `IntegrationError`) — need developer tokens / OAuth app setup.
+- SSO (SAML/OIDC), signed MSI installer, data-subject export/delete tooling,
+  distributed tracing/metrics — Milestone 3.
 
 ## Next recommended milestones
 

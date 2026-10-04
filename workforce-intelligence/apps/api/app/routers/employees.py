@@ -1,7 +1,7 @@
 """Employee-centric read endpoints (timeline, usage, content, sessions, AI)."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -217,9 +217,9 @@ def summary(
     db: Session = Depends(get_db),
 ) -> AISummaryOut:
     emp = _load_viewable(db, ctx, employee_id)
-    date_str = date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    date_str = date or datetime.now(UTC).strftime("%Y-%m-%d")
     # Rebuild sessions for the day so the summary reflects current data.
-    day_start = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    day_start = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=UTC)
     build_sessions(db, emp.organization_id, emp.id, day_start, day_start.replace(hour=23, minute=59, second=59))
     record_audit(
         db, organization_id=emp.organization_id, viewer_user_id=ctx.user_id,

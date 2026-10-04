@@ -7,7 +7,7 @@ test and to trigger manually. The APScheduler wiring is only started when
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
@@ -35,8 +35,8 @@ def job_nightly_summaries(date_str: str | None = None) -> int:
     db = SessionLocal()
     count = 0
     try:
-        date_str = date_str or datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        day = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        date_str = date_str or datetime.now(UTC).strftime("%Y-%m-%d")
+        day = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=UTC)
         svc = WorkUnderstandingService()
         employees = db.execute(select(Employee)).scalars().all()
         for emp in employees:
@@ -52,7 +52,7 @@ def job_automation_recompute(days: int = 30) -> int:
     db = SessionLocal()
     total = 0
     try:
-        end = datetime.now(timezone.utc)
+        end = datetime.now(UTC)
         start = end - timedelta(days=days)
         orgs = db.execute(select(Organization.id)).scalars().all()
         for org_id in orgs:

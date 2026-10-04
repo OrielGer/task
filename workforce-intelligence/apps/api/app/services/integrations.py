@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from sqlalchemy import select
@@ -180,7 +180,7 @@ def sync_channel(db: Session, organization_id: str, channel: str) -> int:
         select(IntegrationCredential).where(
             IntegrationCredential.organization_id == organization_id,
             IntegrationCredential.channel == channel,
-            IntegrationCredential.is_active == True,  # noqa: E712
+            IntegrationCredential.is_active == True,
         )
     ).scalar_one_or_none()
 
@@ -198,7 +198,7 @@ def sync_channel(db: Session, organization_id: str, channel: str) -> int:
             )
         ).scalars()
     }
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for rec in records:
         row = existing.get(rec.external_id)
         if row is None:

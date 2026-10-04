@@ -5,7 +5,7 @@ an explicit set of employee ids the caller is authorized to see.
 """
 from __future__ import annotations
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 from datetime import datetime
 
 from sqlalchemy import delete, func, select
@@ -120,7 +120,7 @@ def detect_workflows(
                 systems.append(sysname)
         # Contiguous sub-sequences of length 3..5.
         for n in (3, 4, 5):
-            for i in range(0, max(0, len(systems) - n + 1)):
+            for i in range(max(0, len(systems) - n + 1)):
                 sub = tuple(systems[i : i + n])
                 seq_durations[sub].append(ws.active_seconds or 0)
                 seq_employees[sub].add(ws.employee_id)

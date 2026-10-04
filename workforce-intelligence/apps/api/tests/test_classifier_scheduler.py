@@ -1,7 +1,7 @@
 """AI session classifier + scheduler jobs + automation persistence tests."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 
 from app.services.ai.classifier import AISessionClassifier, get_default_classifier
 from app.services.work_sessions import DeterministicClassifier, SessionDraft
@@ -17,8 +17,8 @@ class _FakeProvider:
 
 def _draft():
     d = SessionDraft(
-        started_at=datetime.now(timezone.utc),
-        ended_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
+        ended_at=datetime.now(UTC),
     )
     d.domains = {"business.facebook.com"}
     d.apps = {"chrome.exe"}
@@ -60,7 +60,7 @@ def test_default_classifier_is_deterministic_by_default():
 
 
 def _seed_events(client, b):
-    now = datetime.now(timezone.utc).replace(microsecond=0)
+    now = datetime.now(UTC).replace(microsecond=0)
     events = [
         {"client_event_id": f"e{i}", "application": "chrome.exe", "window_title": t,
          "started_at": now.isoformat(), "ended_at": now.isoformat(),

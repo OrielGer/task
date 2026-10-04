@@ -30,9 +30,10 @@ def test_set_credential_encrypts_token(client):
     )
     assert r.status_code == 200
     # Stored ciphertext must not contain the plaintext token.
+    from sqlalchemy import select
+
     from app.db import SessionLocal
     from app.models import IntegrationCredential
-    from sqlalchemy import select
 
     db = SessionLocal()
     try:

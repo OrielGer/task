@@ -5,7 +5,7 @@ endpoint applies the same tenant + RBAC restriction.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -65,7 +65,7 @@ def parse_range(start: str | None, end: str | None, default_days: int = 7) -> tu
     if end:
         end_dt = _parse_dt(end)
     else:
-        end_dt = datetime.now(timezone.utc)
+        end_dt = datetime.now(UTC)
     if start:
         start_dt = _parse_dt(start)
     else:
@@ -84,5 +84,5 @@ def _parse_dt(value: str) -> datetime:
     except ValueError:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Invalid date: {value}")
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     return dt

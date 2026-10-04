@@ -94,8 +94,11 @@ captured** and **secrets are redacted before upload**.
   string-built SQL).
 - Secure HTTP headers (HSTS-ready, `X-Content-Type-Options`, `X-Frame-Options`,
   referrer policy, CSP for the dashboard).
-- Rate limiting on auth and ingestion endpoints.
+- Rate limiting on auth and ingestion endpoints (Redis-backed when configured,
+  with an in-memory fail-open fallback).
 - Audit logging of every access to detailed employee content.
+- Marketing-integration tokens are **encrypted at rest** (Fernet; key from
+  `INTEGRATION_ENC_KEY`) and never returned by the API.
 - TLS-ready deployment (TLS terminated at the proxy; collectors use HTTPS).
 
 ## 6. Audit logging

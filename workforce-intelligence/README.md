@@ -90,6 +90,25 @@ Configure `appsettings.json` (API URL + device enrollment code). The agent is a
 normal, visible Windows application. See
 [`apps/windows-agent/README.md`](./apps/windows-agent/README.md).
 
+## Capabilities at a glance
+
+- Multi-tenant, RBAC-gated backend; outbound-only ingestion; edge + server
+  secret redaction; deterministic work sessions; AI summaries/recommendations
+  (mock by default); repetitive-workflow detection + automation opportunities.
+- **Marketing integrations** (HubSpot/Meta/LinkedIn live + Google/Email stubs)
+  with a default **sandbox mode** that runs offline; tokens encrypted at rest.
+- Optional **AI session classification**, a **background scheduler** (retention,
+  nightly summaries, automation recompute), **audit log** + pagination, and a
+  Redis-backed rate limiter.
+- **Dashboard** pages: org overview, employee detail, analytics (apps/websites/
+  workflows/automation), AI manager chat, admin provisioning, integrations, and
+  audit.
+- **CI** runs backend tests + lint, the extension build/tests, and the
+  dashboard build on every push/PR (`.github/workflows/ci.yml`).
+
+See [`.env.example`](./.env.example) for all configuration
+(`INTEGRATION_MODE`, `SCHEDULER_ENABLED`, `AI_PROVIDER`, retention, etc.).
+
 ## Documentation
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — system design & data flow

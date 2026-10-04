@@ -9,7 +9,7 @@ import os
 import secrets as _secrets
 import tempfile
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import pytest
 
@@ -19,11 +19,11 @@ os.environ["JWT_SECRET"] = _secrets.token_hex(32)
 os.environ["AI_PROVIDER"] = "mock"
 os.environ.setdefault("RATE_LIMIT_REQUESTS", "100000")  # don't rate-limit tests
 
-from fastapi.testclient import TestClient  # noqa: E402
+from fastapi.testclient import TestClient
 
-from app.db import Base, SessionLocal, engine  # noqa: E402
-from app.main import app  # noqa: E402
-from app.models import (  # noqa: E402
+from app.db import Base, SessionLocal, engine
+from app.main import app
+from app.models import (
     Device,
     Employee,
     EmployeeStatus,
@@ -33,7 +33,7 @@ from app.models import (  # noqa: E402
     TeamMember,
     User,
 )
-from app.security import hash_device_secret, hash_password  # noqa: E402
+from app.security import hash_device_secret, hash_password
 
 
 @dataclass

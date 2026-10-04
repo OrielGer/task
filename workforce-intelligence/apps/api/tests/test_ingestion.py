@@ -1,13 +1,13 @@
 """Event/content ingestion tests, including privacy guarantees and device auth."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from tests.conftest import auth, device_headers, provision_org
 
 
 def _activity(cid: str, title: str = "HubSpot — Acme"):
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     return {
         "client_event_id": cid,
         "application": "chrome.exe",
@@ -91,7 +91,7 @@ def test_window_title_secrets_are_redacted_on_ingest(client):
 
 def test_content_only_stored_for_allowlisted_domains(client):
     b = provision_org(client, "orgA")
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     payload = {
         "events": [
             {  # allowlisted → stored
@@ -119,7 +119,7 @@ def test_content_only_stored_for_allowlisted_domains(client):
 def test_password_content_is_redacted_before_storage(client):
     """Even if a secret is typed into an allowlisted editor, it is redacted."""
     b = provision_org(client, "orgA")
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     secret_text = "draft with password: SuperSecret123 and api_key=ABCDEF1234567890"
     client.post(
         "/api/v1/agent/content/batch",

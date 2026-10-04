@@ -102,7 +102,7 @@ def _collect_intervals(db: Session, employee_id: str, start: datetime, end: date
             ActivityEvent.employee_id == employee_id,
             ActivityEvent.started_at >= start,
             ActivityEvent.started_at < end,
-            ActivityEvent.is_idle == False,  # noqa: E712 (idle time isn't work)
+            ActivityEvent.is_idle == False,
         )
     ).scalars()
     for a in acts:

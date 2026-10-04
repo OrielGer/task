@@ -11,9 +11,8 @@ Create Date: 2026-10-04
 from __future__ import annotations
 
 from alembic import op
-
 from app.db import Base
-from app.models import Campaign, IntegrationCredential  # noqa: F401
+from app.models import Campaign, IntegrationCredential
 
 revision = "0002_integrations"
 down_revision = "0001_initial"

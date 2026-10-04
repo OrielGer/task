@@ -1,13 +1,13 @@
 """Work-session engine, AI summary/insights, and AI-query scope enforcement."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from tests.conftest import auth, device_headers, provision_org
 
 
 def _seed_activity(client, b):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     events = []
     plan = [
         ("chrome.exe", "HubSpot — Acme", 0),

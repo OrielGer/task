@@ -10,7 +10,7 @@ Run: ``python -m app.seed``. Change/remove before any real deployment.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
@@ -73,7 +73,7 @@ def seed() -> None:
         daniel = Employee(
             organization_id=org.id, user_id=daniel_user.id, display_name="Daniel Employee",
             email="daniel@acme.example", status=EmployeeStatus.active,
-            last_seen_at=datetime.now(timezone.utc),
+            last_seen_at=datetime.now(UTC),
         )
         maya = Employee(
             organization_id=org.id, display_name="Maya Marketer", email="maya@acme.example",
@@ -93,28 +93,28 @@ def seed() -> None:
         device = Device(
             organization_id=org.id, employee_id=daniel.id, name="Daniel-Workstation",
             device_key=DEMO_DEVICE_KEY, credential_hash=hash_device_secret(DEMO_DEVICE_SECRET),
-            is_active=True, agent_version="0.1.0", last_heartbeat_at=datetime.now(timezone.utc),
+            is_active=True, agent_version="0.1.0", last_heartbeat_at=datetime.now(UTC),
         )
         db.add(device)
         db.flush()
 
         # Seed the last 5 days with a recurring CRM → Docs → Ads pattern so the
         # repetitive-workflow detector and automation recommendations have input.
-        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-        for day_offset in range(0, 5):
+        today = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        for day_offset in range(5):
             day = today - timedelta(days=day_offset)
             _seed_day(db, org.id, daniel.id, device.id, day, with_content=(day_offset == 0))
         db.commit()
 
         # Build sessions for each seeded day so timeline/sessions/workflows populate.
-        for day_offset in range(0, 5):
+        for day_offset in range(5):
             day = today - timedelta(days=day_offset)
             build_sessions(db, org.id, daniel.id, day, day + timedelta(days=1))
 
         print("[seed] demo data created.")
-        print(f"[seed] ORG_ADMIN  admin@acme.example / Passw0rd!admin")
-        print(f"[seed] MANAGER    manager@acme.example / Passw0rd!mgr")
-        print(f"[seed] EMPLOYEE   daniel@acme.example / Passw0rd!emp")
+        print("[seed] ORG_ADMIN  admin@acme.example / Passw0rd!admin")
+        print("[seed] MANAGER    manager@acme.example / Passw0rd!mgr")
+        print("[seed] EMPLOYEE   daniel@acme.example / Passw0rd!emp")
         print(f"[seed] DEVICE     key={DEMO_DEVICE_KEY} secret={DEMO_DEVICE_SECRET}")
     finally:
         db.close()

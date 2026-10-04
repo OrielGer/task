@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     Boolean,
@@ -33,7 +33,7 @@ def _uuid() -> str:
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def PK() -> Mapped[str]:
@@ -242,7 +242,7 @@ class ContentItem(Base):
         DateTime(timezone=True), default=_now, onupdate=_now
     )
 
-    versions: Mapped[list["ContentVersion"]] = relationship(
+    versions: Mapped[list[ContentVersion]] = relationship(
         back_populates="item", cascade="all, delete-orphan"
     )
 
