@@ -4,8 +4,9 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/lib/auth";
-import { ApiError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 
+// Only offered when the API reports seeded demo accounts (never in production).
 const DEMO_LOGINS = [
   { label: "Admin", email: "admin@acme.example", password: "Passw0rd!admin" },
   { label: "Manager", email: "manager@acme.example", password: "Passw0rd!mgr" },
@@ -19,11 +20,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
 
   // Already signed in → go home.
   useEffect(() => {
     if (ready && token) router.replace("/");
   }, [ready, token, router]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    api
+      .authOptions(controller.signal)
+      .then((o) => setShowDemo(o.demo_logins))
+      .catch(() => setShowDemo(false));
+    return () => controller.abort();
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -96,16 +107,18 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="demo-logins">
-          <div style={{ marginBottom: 6 }}>Demo accounts (click to fill):</div>
-          <div className="row">
-            {DEMO_LOGINS.map((d) => (
-              <button key={d.email} type="button" className="small-btn" onClick={() => fill(d)}>
-                {d.label}
-              </button>
-            ))}
+        {showDemo ? (
+          <div className="demo-logins">
+            <div style={{ marginBottom: 6 }}>Demo accounts (click to fill):</div>
+            <div className="row">
+              {DEMO_LOGINS.map((d) => (
+                <button key={d.email} type="button" className="small-btn" onClick={() => fill(d)}>
+                  {d.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </div>
   );

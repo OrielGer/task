@@ -1,17 +1,32 @@
 """Authentication endpoints."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.audit import record_audit
+from app.config import get_settings
 from app.db import get_db
 from app.deps import AuthContext, get_current_user
 from app.models import Employee, User
-from app.schemas import LoginRequest, MeResponse, TokenResponse
-from app.security import create_access_token, verify_password
+from app.schemas import (
+    AuthOptionsOut,
+    ChangePasswordRequest,
+    LoginRequest,
+    MeResponse,
+    TokenResponse,
+)
+from app.security import create_access_token, hash_password, verify_password
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+
+
+@router.get("/options", response_model=AuthOptionsOut)
+def options() -> AuthOptionsOut:
+    """Login-page options. Demo shortcuts are offered only when the demo accounts
+    are actually seeded (SEED_DEMO), so production never advertises them."""
+    return AuthOptionsOut(demo_logins=get_settings().seed_demo)
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -49,3 +64,30 @@ def me(ctx: AuthContext = Depends(get_current_user), db: Session = Depends(get_d
         organization_id=ctx.organization_id,
         employee_id=employee_id,
     )
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    body: ChangePasswordRequest,
+    ctx: AuthContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Change the signed-in user's own password.
+
+    A wrong current password is a 400, not a 401: the dashboard treats 401 as an
+    expired session and signs the user out.
+    """
+    user = ctx.user
+    if not verify_password(body.current_password, user.password_hash):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Current password is incorrect")
+    if body.new_password == body.current_password:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "New password must be different from the current one"
+        )
+    user.password_hash = hash_password(body.new_password)
+    db.commit()
+    record_audit(
+        db, organization_id=user.organization_id, viewer_user_id=user.id, employee_id=None,
+        action="change_password", resource_type="user", resource_id=user.id,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "@/lib/api";
 import { isAdminRole, useAuth } from "@/lib/auth";
 import { Protected } from "@/components/Protected";
+import { RequireOrg } from "@/components/RequireOrg";
 import { ErrorNotice, Loading } from "@/components/ui";
 import { formatRelative } from "@/lib/format";
 import type {
@@ -26,9 +27,8 @@ function message(err: unknown, fallback: string): string {
 }
 
 function IntegrationsInner() {
-  const { me } = useAuth();
+  const { me, activeOrgId } = useAuth();
   const isSuper = me?.role === "SUPER_ADMIN";
-  const [superOrgId, setSuperOrgId] = useState("");
 
   const [rows, setRows] = useState<IntegrationStatus[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,8 +49,9 @@ function IntegrationsInner() {
   const [campaigns, setCampaigns] = useState<Campaign[] | null>(null);
   const [campaignErr, setCampaignErr] = useState<string | null>(null);
 
-  // Org id used for path-scoped calls. ORG_ADMIN is pinned to their own org.
-  const pathOrgId = isSuper ? superOrgId.trim() : me?.organization_id ?? "";
+  // Org id used for path-scoped calls: the top-bar choice for SUPER_ADMIN,
+  // otherwise the user's own org.
+  const pathOrgId = activeOrgId ?? "";
   // Query param for reads: SUPER_ADMIN passes it, others omit.
   const readOrgParam = isSuper ? pathOrgId || undefined : undefined;
 
@@ -175,24 +176,6 @@ function IntegrationsInner() {
       <p className="page-sub">
         Connect advertising, CRM and email channels to enrich session attribution.
       </p>
-
-      {isSuper ? (
-        <div className="card">
-          <h2>Active organization</h2>
-          <p className="muted small" style={{ marginTop: -6, marginBottom: 14 }}>
-            Super admins must choose the organization to read and configure.
-          </p>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="int-org">Organization id</label>
-            <input
-              id="int-org"
-              value={superOrgId}
-              onChange={(e) => setSuperOrgId(e.target.value)}
-              placeholder="organization id"
-            />
-          </div>
-        </div>
-      ) : null}
 
       {error ? <ErrorNotice message={error} /> : null}
 
@@ -384,7 +367,9 @@ function IntegrationsInner() {
 export default function IntegrationsPage() {
   return (
     <Protected>
-      <IntegrationsInner />
+      <RequireOrg>
+        <IntegrationsInner />
+      </RequireOrg>
     </Protected>
   );
 }

@@ -28,6 +28,17 @@ export interface Me {
   employee_id: string | null;
 }
 
+/** Public login-page options. */
+export interface AuthOptions {
+  /** true only when demo accounts are seeded (never in production). */
+  demo_logins: boolean;
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
 export type EmployeeStatus = "active" | "idle" | "offline" | string;
 
 export interface Employee {
@@ -131,6 +142,8 @@ export interface AIQueryRequest {
   question: string;
   employee_id?: string | null;
   team_id?: string | null;
+  /** SUPER_ADMIN org-wide queries; other roles are pinned to their own org. */
+  organization_id?: string | null;
 }
 
 export interface AIQueryResponse {

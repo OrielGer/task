@@ -11,6 +11,7 @@ from app.audit import record_audit
 from app.db import get_db
 from app.deps import (
     AuthContext,
+    get_current_user,
     load_employee_or_404,
     require_roles,
     require_same_org,
@@ -30,6 +31,20 @@ from app.security import hash_device_secret, hash_password
 router = APIRouter(prefix="/api/v1", tags=["admin"])
 
 _ASSIGNABLE_ROLES = {Role.ORG_ADMIN, Role.MANAGER, Role.EMPLOYEE}
+
+
+@router.get("/organizations", response_model=list[OrganizationOut])
+def list_organizations(
+    ctx: AuthContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[Organization]:
+    """SUPER_ADMIN sees every tenant; everyone else only their own organization."""
+    q = select(Organization).order_by(Organization.name)
+    if ctx.role != Role.SUPER_ADMIN:
+        if ctx.organization_id is None:
+            return []
+        q = q.where(Organization.id == ctx.organization_id)
+    return list(db.execute(q).scalars())
 
 
 @router.post("/organizations", response_model=OrganizationOut, status_code=201)

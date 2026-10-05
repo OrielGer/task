@@ -10,7 +10,9 @@ import type {
   AISummary,
   AllowlistResult,
   AuditPage,
+  AuthOptions,
   AutomationOpportunity,
+  ChangePasswordRequest,
   Campaign,
   ContentItem,
   CurrentActivity,
@@ -89,6 +91,45 @@ export function clearToken(): void {
   }
 }
 
+// ── Active organization (SUPER_ADMIN only) ───────────────────────────────────
+// A super admin has no organization of their own; org-scoped endpoints need an
+// explicit ?organization_id=. The auth layer sets this for super admins only, and
+// request() then adds it to every authenticated call that doesn't name an org.
+const ACTIVE_ORG_KEY = "wfi_active_org";
+let activeOrganizationId: string | null = null;
+
+export function getStoredActiveOrganization(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(ACTIVE_ORG_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setActiveOrganization(id: string | null): void {
+  activeOrganizationId = id;
+  if (typeof window === "undefined") return;
+  try {
+    if (id) window.localStorage.setItem(ACTIVE_ORG_KEY, id);
+    else window.localStorage.removeItem(ACTIVE_ORG_KEY);
+  } catch {
+    /* storage unavailable — ignore */
+  }
+}
+
+/** Stop adding the org to requests (sign-out / non-super user) but keep the
+ * stored choice, so a super admin's next session resumes on the same org. */
+export function forgetActiveOrganization(): void {
+  activeOrganizationId = null;
+}
+
+function withActiveOrganization(path: string): string {
+  if (!activeOrganizationId || /[?&]organization_id=/.test(path)) return path;
+  const sep = path.includes("?") ? "&" : "?";
+  return `${path}${sep}organization_id=${encodeURIComponent(activeOrganizationId)}`;
+}
+
 // ── Core request helper ──────────────────────────────────────────────────────
 interface RequestOptions {
   method?: string;
@@ -105,6 +146,7 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   if (!opts.anonymous) {
     const token = getToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
+    path = withActiveOrganization(path);
   }
 
   let res: Response;
@@ -170,6 +212,19 @@ export const api = {
 
   me(signal?: AbortSignal): Promise<Me> {
     return request<Me>("/api/v1/auth/me", { signal });
+  },
+
+  authOptions(signal?: AbortSignal): Promise<AuthOptions> {
+    return request<AuthOptions>("/api/v1/auth/options", { anonymous: true, signal });
+  },
+
+  changePassword(body: ChangePasswordRequest): Promise<void> {
+    return request<void>("/api/v1/auth/change-password", { method: "POST", body });
+  },
+
+  /** SUPER_ADMIN: every organization. Other roles: only their own. */
+  organizations(signal?: AbortSignal): Promise<OrganizationSummary[]> {
+    return request<OrganizationSummary[]>("/api/v1/organizations", { signal });
   },
 
   employees(signal?: AbortSignal): Promise<Employee[]> {

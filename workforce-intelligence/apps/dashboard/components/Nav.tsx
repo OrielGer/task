@@ -20,7 +20,7 @@ const ADMIN_LINKS = [
 
 export function Nav() {
   const pathname = usePathname();
-  const { token, me, logout } = useAuth();
+  const { token, me, logout, organizations, activeOrgId, selectOrg } = useAuth();
 
   // No chrome on the login screen.
   if (pathname === "/login") return null;
@@ -51,11 +51,28 @@ export function Nav() {
               ))}
             </nav>
             <div className="nav-right">
+              {me?.role === "SUPER_ADMIN" && organizations ? (
+                <select
+                  aria-label="Active organization"
+                  value={activeOrgId ?? ""}
+                  onChange={(e) => selectOrg(e.target.value || null)}
+                  style={{ width: "auto", maxWidth: 220, padding: "5px 8px", fontSize: 13 }}
+                >
+                  <option value="">
+                    {organizations.length > 0 ? "Choose organization…" : "No organizations"}
+                  </option>
+                  {organizations.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
               {me ? (
-                <span className="small">
+                <Link href="/account" className="small" title="Account settings">
                   {me.full_name || me.email}
                   {me.role ? ` · ${me.role}` : ""}
-                </span>
+                </Link>
               ) : null}
               <button className="small-btn ghost" onClick={logout}>
                 Log out

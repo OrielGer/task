@@ -6,6 +6,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Protected } from "@/components/Protected";
+import { RequireOrg } from "@/components/RequireOrg";
 import { ErrorNotice, Loading, StatusBadge } from "@/components/ui";
 import { formatRelative } from "@/lib/format";
 import type { Employee } from "@/lib/types";
@@ -133,7 +134,9 @@ function OverviewInner() {
 export default function OverviewPage() {
   return (
     <Protected>
-      <OverviewInner />
+      <RequireOrg>
+        <OverviewInner />
+      </RequireOrg>
     </Protected>
   );
 }

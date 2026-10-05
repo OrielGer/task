@@ -25,10 +25,13 @@ Date query params (`start`, `end`, `date`) accept `YYYY-MM-DD` or ISO-8601.
 |--------|------|------|-------|
 | POST | `/api/v1/auth/login` | none | `{email, password}` → `{access_token, role, organization_id, user_id}` |
 | GET | `/api/v1/auth/me` | user | Current principal + linked `employee_id` |
+| GET | `/api/v1/auth/options` | none | `{demo_logins}`: true only when demo accounts are seeded (`SEED_DEMO`) |
+| POST | `/api/v1/auth/change-password` | user | `{current_password, new_password}` (min 10 chars) → 204; wrong current → 400; audited |
 
 ## Administration / provisioning
 | Method | Path | Roles | Body / notes |
 |--------|------|-------|--------------|
+| GET | `/api/v1/organizations` | user | `[{id, name}]`: every org for SUPER_ADMIN, otherwise only the caller's own |
 | POST | `/api/v1/organizations` | SUPER_ADMIN | `{name, allowlisted_domains[]}` |
 | POST | `/api/v1/organizations/{orgId}/users` | SUPER_ADMIN, ORG_ADMIN | `{email, full_name, password, role}` |
 | POST | `/api/v1/organizations/{orgId}/employees` | SUPER_ADMIN, ORG_ADMIN | `{display_name, email, user_id?}` |

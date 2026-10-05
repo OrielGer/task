@@ -670,8 +670,7 @@ function parseDomains(value: string): string[] {
 }
 
 function AdminInner() {
-  const { me } = useAuth();
-  const [superOrgId, setSuperOrgId] = useState("");
+  const { me, activeOrgId, organizations, selectOrg, refreshOrganizations } = useAuth();
 
   if (!me) return <Loading label="Loading your profile…" />;
 
@@ -685,7 +684,17 @@ function AdminInner() {
   }
 
   const isSuper = me.role === "SUPER_ADMIN";
-  const orgId = isSuper ? superOrgId.trim() : me.organization_id ?? "";
+  const orgId = activeOrgId ?? "";
+  const activeOrgName = organizations?.find((o) => o.id === orgId)?.name;
+
+  async function onOrgCreated(org: OrganizationSummary) {
+    try {
+      await refreshOrganizations();
+    } catch {
+      /* the top-bar list refreshes on the next load */
+    }
+    selectOrg(org.id);
+  }
 
   return (
     <>
@@ -696,21 +705,19 @@ function AdminInner() {
 
       {isSuper ? (
         <>
-          <CreateOrgForm onCreated={(org) => setSuperOrgId(org.id)} />
+          <CreateOrgForm onCreated={(org) => void onOrgCreated(org)} />
           <div className="card">
             <h2>Active organization</h2>
-            <p className="muted small" style={{ marginTop: -6, marginBottom: 14 }}>
-              As a super admin you must choose the organization these actions apply to.
+            <p className="muted small" style={{ margin: 0 }}>
+              {orgId ? (
+                <>
+                  Actions below apply to <strong>{activeOrgName ?? orgId}</strong>{" "}
+                  <span className="mono">({orgId})</span>. Switch organizations in the top bar.
+                </>
+              ) : (
+                "Choose an organization in the top bar, or create one above."
+              )}
             </p>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label htmlFor="super-org">Organization id</label>
-              <input
-                id="super-org"
-                value={superOrgId}
-                onChange={(e) => setSuperOrgId(e.target.value)}
-                placeholder="organization id"
-              />
-            </div>
           </div>
         </>
       ) : (
@@ -725,7 +732,7 @@ function AdminInner() {
 
       {isSuper && !orgId ? (
         <div className="notice" style={{ marginBottom: 20 }}>
-          Enter an organization id above (or create one) to enable the forms below.
+          Choose (or create) an organization to enable the forms below.
         </div>
       ) : null}
 
