@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { api, ApiError } from "@/lib/api";
 import { Protected } from "@/components/Protected";
+import { RequireOrg } from "@/components/RequireOrg";
 import { ErrorNotice, Loading, UsageBars } from "@/components/ui";
 import { formatDuration, formatPercent } from "@/lib/format";
 import type { AutomationOpportunity, UsageRow, WorkflowRow } from "@/lib/types";
@@ -179,7 +180,9 @@ function AnalyticsInner() {
 export default function AnalyticsPage() {
   return (
     <Protected>
-      <AnalyticsInner />
+      <RequireOrg>
+        <AnalyticsInner />
+      </RequireOrg>
     </Protected>
   );
 }

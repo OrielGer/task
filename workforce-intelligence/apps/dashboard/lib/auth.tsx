@@ -2,6 +2,8 @@
 
 // Client-side auth context: holds the JWT + current user, persists the token
 // in localStorage, and redirects to /login on logout or any 401 from the API.
+// For SUPER_ADMIN it also tracks the active organization that org-scoped pages
+// act on (other roles are pinned to their own organization by the API).
 
 import {
   createContext,
@@ -18,11 +20,14 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   api,
   clearToken,
+  forgetActiveOrganization,
+  getStoredActiveOrganization,
   getToken,
+  setActiveOrganization,
   setToken,
   UNAUTHORIZED_EVENT,
 } from "./api";
-import type { LoginRequest, Me, Role } from "./types";
+import type { LoginRequest, Me, OrganizationSummary, Role } from "./types";
 
 /** ORG_ADMIN and SUPER_ADMIN can see admin / provisioning surfaces. */
 export function isAdminRole(role: Role | null | undefined): boolean {
@@ -34,6 +39,16 @@ interface AuthState {
   ready: boolean;
   token: string | null;
   me: Me | null;
+  /** SUPER_ADMIN only: every organization (null until loaded / other roles). */
+  organizations: OrganizationSummary[] | null;
+  /** The organization org-scoped pages act on (own org for non-super roles). */
+  activeOrgId: string | null;
+  /** true once activeOrgId is settled for the signed-in user. */
+  orgReady: boolean;
+  /** SUPER_ADMIN: switch the active organization. */
+  selectOrg: (id: string | null) => void;
+  /** SUPER_ADMIN: reload the organization list (e.g. after creating one). */
+  refreshOrganizations: () => Promise<OrganizationSummary[]>;
   login: (creds: LoginRequest) => Promise<void>;
   logout: () => void;
 }
@@ -45,6 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [token, setTokenState] = useState<string | null>(null);
   const [me, setMe] = useState<Me | null>(null);
+  const [organizations, setOrganizations] = useState<OrganizationSummary[] | null>(null);
+  const [superOrgId, setSuperOrgId] = useState<string | null>(null);
+  const [orgsLoaded, setOrgsLoaded] = useState(false);
+
+  const isSuper = me?.role === "SUPER_ADMIN";
 
   // Hydrate token from storage once, on mount.
   useEffect(() => {
@@ -69,8 +89,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => controller.abort();
   }, [token]);
 
+  // Set the API-layer org before re-rendering, so pages that mount on the new
+  // org never fire a request without it.
+  const selectOrg = useCallback((id: string | null) => {
+    setActiveOrganization(id);
+    setSuperOrgId(id);
+  }, []);
+
+  const refreshOrganizations = useCallback(async () => {
+    const list = await api.organizations();
+    setOrganizations(list);
+    return list;
+  }, []);
+
+  // Super admins: load the tenants and restore (or auto-pick) the active one.
+  useEffect(() => {
+    if (!isSuper) {
+      forgetActiveOrganization();
+      setOrganizations(null);
+      setSuperOrgId(null);
+      setOrgsLoaded(false);
+      return;
+    }
+    let cancelled = false;
+    api
+      .organizations()
+      .then((list) => {
+        if (cancelled) return;
+        setOrganizations(list);
+        const stored = getStoredActiveOrganization();
+        const pick =
+          list.find((o) => o.id === stored)?.id ?? (list.length === 1 ? list[0].id : null);
+        selectOrg(pick);
+      })
+      .catch(() => {
+        if (!cancelled) setOrganizations([]);
+      })
+      .finally(() => {
+        if (!cancelled) setOrgsLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSuper, selectOrg]);
+
   const logout = useCallback(() => {
     clearToken();
+    forgetActiveOrganization();
     setTokenState(null);
     setMe(null);
     router.replace("/login");
@@ -79,6 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Global 401 handler: the API layer dispatches UNAUTHORIZED_EVENT.
   useEffect(() => {
     const handler = () => {
+      forgetActiveOrganization();
       setTokenState(null);
       setMe(null);
       router.replace("/login");
@@ -99,9 +165,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const activeOrgId = isSuper ? superOrgId : me?.organization_id ?? null;
+  const orgReady = me ? (isSuper ? orgsLoaded : true) : false;
+
   const value = useMemo<AuthState>(
-    () => ({ ready, token, me, login, logout }),
-    [ready, token, me, login, logout]
+    () => ({
+      ready,
+      token,
+      me,
+      organizations,
+      activeOrgId,
+      orgReady,
+      selectOrg,
+      refreshOrganizations,
+      login,
+      logout,
+    }),
+    [
+      ready,
+      token,
+      me,
+      organizations,
+      activeOrgId,
+      orgReady,
+      selectOrg,
+      refreshOrganizations,
+      login,
+      logout,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

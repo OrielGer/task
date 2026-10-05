@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { api, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { Protected } from "@/components/Protected";
+import { RequireOrg } from "@/components/RequireOrg";
 import { ErrorNotice } from "@/components/ui";
 
 interface Turn {
@@ -16,6 +18,7 @@ interface Turn {
 }
 
 function AiInner() {
+  const { me, activeOrgId } = useAuth();
   const [question, setQuestion] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [teamId, setTeamId] = useState("");
@@ -45,6 +48,8 @@ function AiInner() {
         question: q,
         employee_id: employeeId.trim() || undefined,
         team_id: teamId.trim() || undefined,
+        // The query endpoint reads the org from the body, not the query string.
+        organization_id: me?.role === "SUPER_ADMIN" ? activeOrgId : undefined,
       });
       setTurns((prev) =>
         prev.map((t) =>
@@ -143,7 +148,9 @@ function AiInner() {
 export default function AiPage() {
   return (
     <Protected>
-      <AiInner />
+      <RequireOrg>
+        <AiInner />
+      </RequireOrg>
     </Protected>
   );
 }

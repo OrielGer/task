@@ -29,6 +29,17 @@ class MeResponse(BaseModel):
     employee_id: str | None = None
 
 
+class AuthOptionsOut(BaseModel):
+    """Public login-page options (no secrets)."""
+
+    demo_logins: bool
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=10, max_length=256)
+
+
 # ── Agent ingestion ─────────────────────────────────────────────────────────
 class ActivityEventIn(BaseModel):
     client_event_id: str = Field(max_length=64)

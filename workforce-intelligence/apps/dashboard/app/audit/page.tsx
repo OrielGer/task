@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { isAdminRole, useAuth } from "@/lib/auth";
 import { Protected } from "@/components/Protected";
+import { RequireOrg } from "@/components/RequireOrg";
 import { ErrorNotice, Loading } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import type { AuditPage as AuditPageData } from "@/lib/types";
@@ -16,15 +17,14 @@ function isAbort(err: unknown): boolean {
 }
 
 function AuditInner() {
-  const { me } = useAuth();
+  const { me, activeOrgId } = useAuth();
   const isSuper = me?.role === "SUPER_ADMIN";
-  const [superOrgId, setSuperOrgId] = useState("");
   const [offset, setOffset] = useState(0);
   const [data, setData] = useState<AuditPageData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // SUPER_ADMIN passes organization_id; org-scoped roles omit it.
-  const readOrgParam = isSuper ? superOrgId.trim() || undefined : undefined;
+  // SUPER_ADMIN passes the top-bar organization; org-scoped roles omit it.
+  const readOrgParam = isSuper ? activeOrgId || undefined : undefined;
 
   const load = useCallback(
     (signal?: AbortSignal) => {
@@ -72,26 +72,6 @@ function AuditInner() {
         A record of who viewed which employee data, and when.
       </p>
 
-      {isSuper ? (
-        <div className="card">
-          <h2>Active organization</h2>
-          <p className="muted small" style={{ marginTop: -6, marginBottom: 14 }}>
-            Super admins must choose the organization whose audit log to read.
-          </p>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="audit-org">Organization id</label>
-            <input
-              id="audit-org"
-              value={superOrgId}
-              onChange={(e) => {
-                setOffset(0);
-                setSuperOrgId(e.target.value);
-              }}
-              placeholder="organization id"
-            />
-          </div>
-        </div>
-      ) : null}
 
       {error ? <ErrorNotice message={error} /> : null}
 
@@ -165,7 +145,9 @@ function AuditInner() {
 export default function AuditPage() {
   return (
     <Protected>
-      <AuditInner />
+      <RequireOrg>
+        <AuditInner />
+      </RequireOrg>
     </Protected>
   );
 }
