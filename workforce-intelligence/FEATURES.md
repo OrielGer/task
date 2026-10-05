@@ -79,6 +79,27 @@ Every item of the required MVP vertical slice works end-to-end:
 
 Backend test count: **69 passing**.
 
+## Automation agents — implemented (verified)
+
+- **Agents from templates** (`services/automation_agents.py`):
+  - CRM → Ads alignment
+  - Campaign status email
+  - Cross-channel campaign report
+  - Paused-campaign watch
+- **Suggestions:** each detected repetitive workflow (`automation_opportunities`) is mapped to the template that can take it over.
+- **What a run does:**
+  1. Reads campaigns through the integrations. The reads are read-only (`fetch_campaigns`), and sandbox mode uses sample data.
+  2. Builds a deterministic draft.
+  3. Optionally rewrites it with the configured AI provider. The mock provider skips this step.
+  4. Redacts the draft and stores it for **human approval**.
+- **Time saved:** approval credits the template's estimated minutes saved, totalled per agent.
+- **Hard limits:** agents never write to external systems and never act on a workstation. Channel errors report only the HTTP status, never request URLs, which can carry tokens.
+- **Dashboard** `/automation` (Agents):
+  - suggestions and templates
+  - run, pause or resume an agent
+  - run review: the steps, the draft, copy, approve or reject
+- **Not yet:** scheduled (unattended) runs, and connectors that write approved changes back. Writing back needs per-system write scopes and review.
+
 ## Still deferred (clearly stubbed, not hidden)
 - Google Ads / Email **live** connectors (sandbox works; live raises a clear,
   dated `IntegrationError`) — need developer tokens / OAuth app setup.

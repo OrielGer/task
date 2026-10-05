@@ -343,6 +343,61 @@ class AutomationOpportunity(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
+class AutomationAgent(Base):
+    """An automation agent built from a template (see services/automation_agents).
+
+    Agents only PREPARE work (reports, email drafts, proposed changes) from
+    read-only integration data; a human approves each run. They never act on a
+    workstation and never write to external systems.
+    """
+
+    __tablename__ = "automation_agents"
+
+    id: Mapped[str] = PK()
+    organization_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    template: Mapped[str] = mapped_column(String(64), nullable=False)
+    # Workflow (e.g. "HubSpot CRM → Meta Ads Manager") the agent was created from.
+    # Opportunity rows are recomputed nightly, so the name is kept, not an id.
+    source_workflow: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="active")  # active | paused
+    minutes_saved_per_run: Mapped[int] = mapped_column(Integer, default=0)
+    created_by_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, onupdate=_now
+    )
+
+
+class AgentRun(Base):
+    """One execution of an automation agent; awaits human approval."""
+
+    __tablename__ = "agent_runs"
+    __table_args__ = (Index("ix_agent_run_agent_time", "agent_id", "started_at"),)
+
+    id: Mapped[str] = PK()
+    organization_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    agent_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("automation_agents.id"), nullable=False, index=True
+    )
+    # awaiting_approval | approved | rejected | failed
+    status: Mapped[str] = mapped_column(String(20), default="awaiting_approval")
+    steps_json: Mapped[str] = mapped_column(Text, default="[]")
+    output: Mapped[str] = mapped_column(Text, default="")  # redacted draft
+    provider: Mapped[str] = mapped_column(String(50), default="mock")
+    sandbox: Mapped[bool] = mapped_column(Boolean, default=True)
+    started_by_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reviewed_by_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    minutes_saved: Mapped[int] = mapped_column(Integer, default=0)  # credited on approval
+
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
     __table_args__ = (Index("ix_audit_org_time", "organization_id", "created_at"),)

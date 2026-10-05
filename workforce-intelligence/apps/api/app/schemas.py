@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -275,6 +276,75 @@ class CampaignOut(BaseModel):
     name: str
     status: str
     synced_at: datetime
+
+
+# ── Automation agents ─────────────────────────────────────────────────────────
+class AgentTemplateOut(BaseModel):
+    key: str
+    name: str
+    description: str
+    channels: list[str]
+    output_kind: str
+    minutes_saved_per_run: int
+
+
+class AutomationTemplatesOut(BaseModel):
+    templates: list[AgentTemplateOut]
+    integration_mode: str  # sandbox | live
+    ai_provider: str  # active provider ("mock" when no key is configured)
+
+
+class AgentSuggestionOut(BaseModel):
+    workflow_name: str
+    occurrences_per_week: int
+    potential_weekly_savings_seconds: int
+    suggested_template: str
+    has_agent: bool
+
+
+class AutomationAgentCreate(BaseModel):
+    template: str
+    name: str = Field(default="", max_length=255)
+    source_workflow: str | None = Field(default=None, max_length=255)
+
+
+class AutomationAgentUpdate(BaseModel):
+    name: str | None = Field(default=None, max_length=255)
+    status: Literal["active", "paused"] | None = None
+
+
+class AutomationAgentOut(BaseModel):
+    id: str
+    name: str
+    template: str
+    source_workflow: str | None = None
+    status: str
+    minutes_saved_per_run: int
+    created_at: datetime
+    runs: int = 0
+    awaiting_approval: int = 0
+    minutes_saved: int = 0
+    last_run_at: datetime | None = None
+
+
+class AgentRunStep(BaseModel):
+    name: str
+    status: str  # done | skipped | failed
+    detail: str = ""
+
+
+class AgentRunOut(BaseModel):
+    id: str
+    agent_id: str
+    status: str  # awaiting_approval | approved | rejected | failed
+    steps: list[AgentRunStep]
+    output: str
+    provider: str
+    sandbox: bool
+    started_at: datetime
+    finished_at: datetime | None = None
+    reviewed_at: datetime | None = None
+    minutes_saved: int = 0
 
 
 # ── Audit ─────────────────────────────────────────────────────────────────────
