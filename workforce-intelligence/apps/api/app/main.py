@@ -10,7 +10,18 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import get_settings
 from app.rate_limit import limiter
-from app.routers import admin, agent, ai, analytics, audit, auth, employees, integrations, teams
+from app.routers import (
+    admin,
+    agent,
+    ai,
+    analytics,
+    audit,
+    auth,
+    automation,
+    employees,
+    integrations,
+    teams,
+)
 from app.services.scheduler import shutdown_scheduler, start_scheduler
 
 
@@ -81,6 +92,7 @@ def create_app() -> FastAPI:
     app.include_router(analytics.router)
     app.include_router(ai.router)
     app.include_router(integrations.router)
+    app.include_router(automation.router)
     app.include_router(audit.router)
 
     @app.get("/health", tags=["meta"])

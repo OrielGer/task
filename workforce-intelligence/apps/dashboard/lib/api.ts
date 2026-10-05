@@ -4,6 +4,8 @@
 // already redacted server-side; the client only renders it.
 
 import type {
+  AgentRun,
+  AgentSuggestion,
   AIInsight,
   AIQueryRequest,
   AIQueryResponse,
@@ -11,7 +13,11 @@ import type {
   AllowlistResult,
   AuditPage,
   AuthOptions,
+  AutomationAgent,
+  AutomationAgentCreateRequest,
+  AutomationAgentUpdateRequest,
   AutomationOpportunity,
+  AutomationTemplates,
   ChangePasswordRequest,
   Campaign,
   ContentItem,
@@ -435,6 +441,55 @@ export const api = {
         channel,
       })}`,
       { signal }
+    );
+  },
+
+  // ── Automation agents ────────────────────────────────────────────────────────
+  // Org-scoped: a super admin's active organization is added by request().
+  automationTemplates(signal?: AbortSignal): Promise<AutomationTemplates> {
+    return request<AutomationTemplates>("/api/v1/automation/templates", { signal });
+  },
+
+  automationSuggestions(signal?: AbortSignal): Promise<AgentSuggestion[]> {
+    return request<AgentSuggestion[]>("/api/v1/automation/suggestions", { signal });
+  },
+
+  automationAgents(signal?: AbortSignal): Promise<AutomationAgent[]> {
+    return request<AutomationAgent[]>("/api/v1/automation/agents", { signal });
+  },
+
+  createAutomationAgent(body: AutomationAgentCreateRequest): Promise<AutomationAgent> {
+    return request<AutomationAgent>("/api/v1/automation/agents", { method: "POST", body });
+  },
+
+  updateAutomationAgent(
+    agentId: string,
+    body: AutomationAgentUpdateRequest
+  ): Promise<AutomationAgent> {
+    return request<AutomationAgent>(
+      `/api/v1/automation/agents/${encodeURIComponent(agentId)}`,
+      { method: "PATCH", body }
+    );
+  },
+
+  runAutomationAgent(agentId: string): Promise<AgentRun> {
+    return request<AgentRun>(
+      `/api/v1/automation/agents/${encodeURIComponent(agentId)}/run`,
+      { method: "POST" }
+    );
+  },
+
+  automationAgentRuns(agentId: string, signal?: AbortSignal): Promise<AgentRun[]> {
+    return request<AgentRun[]>(
+      `/api/v1/automation/agents/${encodeURIComponent(agentId)}/runs`,
+      { signal }
+    );
+  },
+
+  reviewAgentRun(runId: string, decision: "approve" | "reject"): Promise<AgentRun> {
+    return request<AgentRun>(
+      `/api/v1/automation/runs/${encodeURIComponent(runId)}/${decision}`,
+      { method: "POST" }
     );
   },
 

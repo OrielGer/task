@@ -13,6 +13,7 @@ const LINKS = [
 
 // Shown only to ORG_ADMIN / SUPER_ADMIN.
 const ADMIN_LINKS = [
+  { href: "/automation", label: "Agents" },
   { href: "/admin", label: "Admin" },
   { href: "/integrations", label: "Integrations" },
   { href: "/audit", label: "Audit" },

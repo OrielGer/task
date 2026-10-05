@@ -274,6 +274,83 @@ export interface Campaign {
   synced_at: string | null;
 }
 
+// ── Automation agents ────────────────────────────────────────────────────────
+
+export interface AgentTemplate {
+  key: string;
+  name: string;
+  description: string;
+  channels: IntegrationChannel[];
+  output_kind: "report" | "email_draft" | "change_proposal" | string;
+  minutes_saved_per_run: number;
+}
+
+export interface AutomationTemplates {
+  templates: AgentTemplate[];
+  integration_mode: "sandbox" | "live" | string;
+  /** Active AI provider; "mock" when no key is configured. */
+  ai_provider: string;
+}
+
+/** A detected repetitive workflow that a template can take over. */
+export interface AgentSuggestion {
+  workflow_name: string;
+  occurrences_per_week: number;
+  potential_weekly_savings_seconds: number;
+  suggested_template: string;
+  has_agent: boolean;
+}
+
+export type AutomationAgentStatus = "active" | "paused" | string;
+
+export interface AutomationAgent {
+  id: string;
+  name: string;
+  template: string;
+  source_workflow: string | null;
+  status: AutomationAgentStatus;
+  minutes_saved_per_run: number;
+  created_at: string;
+  runs: number;
+  awaiting_approval: number;
+  minutes_saved: number;
+  last_run_at: string | null;
+}
+
+export interface AutomationAgentCreateRequest {
+  template: string;
+  name?: string;
+  source_workflow?: string | null;
+}
+
+export interface AutomationAgentUpdateRequest {
+  name?: string;
+  status?: "active" | "paused";
+}
+
+export type AgentRunStatus = "awaiting_approval" | "approved" | "rejected" | "failed" | string;
+
+export interface AgentRunStep {
+  name: string;
+  status: "done" | "skipped" | "failed" | string;
+  detail: string;
+}
+
+export interface AgentRun {
+  id: string;
+  agent_id: string;
+  status: AgentRunStatus;
+  steps: AgentRunStep[];
+  /** Prepared draft, already redacted server-side. */
+  output: string;
+  provider: string;
+  sandbox: boolean;
+  started_at: string;
+  finished_at: string | null;
+  reviewed_at: string | null;
+  minutes_saved: number;
+}
+
 // ── Analytics automation + audit ─────────────────────────────────────────────
 
 export interface AutomationOpportunity {

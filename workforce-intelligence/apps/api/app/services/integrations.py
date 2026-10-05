@@ -169,14 +169,10 @@ def get_integration(channel: str) -> MarketingIntegration:
     return integ
 
 
-def sync_channel(db: Session, organization_id: str, channel: str) -> int:
-    """Pull campaigns for one channel into the local mirror. Returns the count.
-
-    In sandbox mode this needs no credential; in live mode it decrypts the
-    stored token for the organization.
-    """
-    integ = get_integration(channel)
-    cred = db.execute(
+def _active_credential(
+    db: Session, organization_id: str, channel: str
+) -> IntegrationCredential | None:
+    return db.execute(
         select(IntegrationCredential).where(
             IntegrationCredential.organization_id == organization_id,
             IntegrationCredential.channel == channel,
@@ -184,10 +180,34 @@ def sync_channel(db: Session, organization_id: str, channel: str) -> int:
         )
     ).scalar_one_or_none()
 
+
+def _list_campaigns(
+    db: Session, organization_id: str, channel: str
+) -> tuple[list[CampaignRecord], IntegrationCredential | None]:
+    integ = get_integration(channel)
+    cred = _active_credential(db, organization_id, channel)
     token = decrypt(cred.secret_encrypted) if cred else ""
     config = json.loads(cred.config_json) if (cred and cred.config_json) else {}
+    return integ.list_campaigns(token, config), cred
 
-    records = integ.list_campaigns(token, config)
+
+def fetch_campaigns(db: Session, organization_id: str, channel: str) -> list[CampaignRecord]:
+    """Read one channel's campaigns without touching the local mirror.
+
+    Read-only by design (used by automation agents). Raises IntegrationError
+    in live mode when the organization has no credential for the channel.
+    """
+    records, _ = _list_campaigns(db, organization_id, channel)
+    return records
+
+
+def sync_channel(db: Session, organization_id: str, channel: str) -> int:
+    """Pull campaigns for one channel into the local mirror. Returns the count.
+
+    In sandbox mode this needs no credential; in live mode it decrypts the
+    stored token for the organization.
+    """
+    records, cred = _list_campaigns(db, organization_id, channel)
 
     # Upsert into the campaigns mirror (tenant-scoped).
     existing = {

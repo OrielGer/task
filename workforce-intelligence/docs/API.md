@@ -97,6 +97,25 @@ pinned to their own org automatically.
 `INTEGRATION_MODE=sandbox` (default) returns deterministic sample data with no
 network calls; `live` calls the real provider APIs with the decrypted token.
 
+## Automation agents
+Agents prepare drafts (reports, status emails, proposed changes) from
+read-only integration data. Every run awaits a person's approval; agents never
+write to external systems or act on a workstation.
+
+| Method | Path | Roles | Notes |
+|--------|------|-------|-------|
+| GET | `/api/v1/automation/templates` | SUPER_ADMIN, ORG_ADMIN, MANAGER | `{templates[], integration_mode, ai_provider}` |
+| GET | `/api/v1/automation/suggestions?organization_id=` | SUPER_ADMIN, ORG_ADMIN | Detected repetitive workflows mapped to a template (`has_agent` once covered) |
+| GET | `/api/v1/automation/agents?organization_id=` | SUPER_ADMIN, ORG_ADMIN, MANAGER | Agents with `runs`, `awaiting_approval`, `minutes_saved`, `last_run_at` |
+| POST | `/api/v1/automation/agents?organization_id=` | SUPER_ADMIN, ORG_ADMIN | `{template, name?, source_workflow?}`; unknown template → 422 |
+| PATCH | `/api/v1/automation/agents/{agentId}` | SUPER_ADMIN, ORG_ADMIN | `{name?, status?: active\|paused}` |
+| POST | `/api/v1/automation/agents/{agentId}/run` | SUPER_ADMIN, ORG_ADMIN | Runs now → run with `steps[]` + redacted `output`; paused → 409 |
+| GET | `/api/v1/automation/agents/{agentId}/runs?limit=` | SUPER_ADMIN, ORG_ADMIN, MANAGER | Newest first (max 100) |
+| POST | `/api/v1/automation/runs/{runId}/approve` | SUPER_ADMIN, ORG_ADMIN | Credits the template's minutes saved; already reviewed → 409 |
+| POST | `/api/v1/automation/runs/{runId}/reject` | SUPER_ADMIN, ORG_ADMIN | Credits nothing |
+
+Create, update, run and review are audited. A cross-organization id returns 404.
+
 ## Audit & jobs
 | Method | Path | Roles | Notes |
 |--------|------|-------|-------|
