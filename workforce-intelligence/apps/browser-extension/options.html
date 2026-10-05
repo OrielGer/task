@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Workforce Intelligence Agent — Settings</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; color: #1f2937; }
+      h1 { font-size: 1.25rem; }
+      label { display: block; margin: 0.75rem 0 0.25rem; font-weight: 600; }
+      input[type="text"], input[type="password"], input[type="url"] { width: 100%; padding: 0.5rem; box-sizing: border-box; }
+      .row { display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; }
+      .note { background: #f3f4f6; border-left: 4px solid #2563eb; padding: 0.75rem; margin: 1rem 0; font-size: 0.9rem; }
+      .allowlist { font-family: monospace; white-space: pre-wrap; background: #f9fafb; padding: 0.5rem; border: 1px solid #e5e7eb; }
+      button { margin-top: 1rem; padding: 0.5rem 1rem; background: #2563eb; color: #fff; border: 0; border-radius: 6px; cursor: pointer; }
+      #status { margin-left: 0.75rem; color: #059669; }
+    </style>
+  </head>
+  <body>
+    <h1>Workforce Intelligence Agent — Settings</h1>
+    <div class="note">
+      This is company work-analytics software for company-owned devices. It tracks the
+      <strong>active browser tab</strong> (with sensitive URL parameters removed) and captures
+      <strong>business text on allowlisted domains only</strong>. It never reads passwords, secrets,
+      payment or MFA fields, and it does not log keystrokes.
+    </div>
+
+    <label for="apiBaseUrl">Backend API URL</label>
+    <input id="apiBaseUrl" type="url" placeholder="http://localhost:8000" />
+
+    <label for="deviceKey">Device key</label>
+    <input id="deviceKey" type="text" placeholder="dev_..." />
+
+    <label for="deviceSecret">Device secret</label>
+    <input id="deviceSecret" type="password" placeholder="(stored locally; sent only to your backend)" />
+
+    <div class="row">
+      <input id="enabled" type="checkbox" />
+      <label for="enabled" style="margin: 0;">Collection enabled</label>
+    </div>
+
+    <label>Allowlisted business domains (from backend)</label>
+    <div id="allowlist" class="allowlist">(none configured yet)</div>
+
+    <button id="save">Save</button><span id="status"></span>
+    <script src="options.js"></script>
+  </body>
+</html>

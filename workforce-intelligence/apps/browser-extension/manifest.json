@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Workforce Intelligence Agent",
+  "version": "0.1.0",
+  "description": "Company work-analytics browser agent. Tracks the active tab (sanitized) and captures business text on allowlisted domains only. No passwords/secrets, no keylogging.",
+  "permissions": ["tabs", "idle", "alarms", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "options.html",
+  "action": {
+    "default_title": "Workforce Intelligence Agent"
+  }
+}

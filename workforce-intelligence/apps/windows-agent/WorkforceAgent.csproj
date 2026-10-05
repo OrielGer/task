@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Workforce Intelligence Windows Agent.
+
+    A NORMAL, VISIBLE console/worker application that collects activity METADATA
+    only (active window title, process name, focus durations, idle/lock state,
+    heartbeat) and sends it OUTBOUND to the backend. It has no inbound command
+    channel and never executes anything received from the network.
+
+    Targets net8.0-windows for the Win32 P/Invoke + SystemEvents APIs. The build
+    requires the .NET 8 SDK on Windows (or `dotnet build` on any host with the
+    windows targeting pack); there is no SDK in this dev container.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- Runtime/analyzer platform guard: Windows-only APIs are used throughout. -->
+    <SupportedOSPlatformVersion>10.0</SupportedOSPlatformVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>WorkforceIntelligence.Agent</RootNamespace>
+    <!-- Product-visible name (shows in Task Manager / installed apps). -->
+    <AssemblyName>WorkforceIntelligenceAgent</AssemblyName>
+    <Product>Workforce Intelligence Agent</Product>
+    <Company>Workforce Intelligence</Company>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Local durable buffer so telemetry survives a backend outage. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+    <!-- appsettings.json loading + binding. -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+    <!-- SessionSwitch (lock/unlock) events in a non-UI (console) app. -->
+    <PackageReference Include="Microsoft.Win32.SystemEvents" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Ship the sample config next to the executable. -->
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
